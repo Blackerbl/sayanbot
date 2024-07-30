@@ -9,8 +9,6 @@ const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBit
 const weeklyPoints = {};
 const allTimePoints = {};
 const serverChannels = {};
-const drive = google.drive('v3');
-let auth;
 
 // Dosyalardan puanları ve kanal ayarlarını yükleme
 if (fs.existsSync('weeklyPoints.json')) {
@@ -30,27 +28,7 @@ if (fs.existsSync('serverChannels.json')) {
 
 client.once('ready', () => {
   console.log(`Logged in as ${client.user.tag}!`);
-  authorize(); // Google API yetkilendirmesini başlat
 });
-
-// Google API için yetkilendirme
-async function authorize() {
-  const CREDENTIALS = JSON.parse(process.env.GOOGLE_CREDENTIALS);
-  const { client_secret, client_id } = CREDENTIALS.web;
-  const oAuth2Client = new google.auth.OAuth2(client_id, client_secret);
-
-  // Token dosyasını kontrol et
-  const tokenPath = 'token.json';
-  if (fs.existsSync(tokenPath)) {
-    const token = fs.readFileSync(tokenPath);
-    oAuth2Client.setCredentials(JSON.parse(token));
-    auth = oAuth2Client;
-  } else {
-    // Token yoksa yetkilendirme işlemini gerçekleştir
-    console.log('Token bulunamadı. Lütfen yetkilendirme işlemini tamamlayın.');
-    return;
-  }
-}
 
 // Haftalık puanları her Pazar gece yarısı sıfırlamak için cron job
 cron.schedule('0 0 * * 0', () => {
@@ -61,33 +39,50 @@ cron.schedule('0 0 * * 0', () => {
   console.log('Haftalık puanlar sıfırlandı.');
 });
 
-// Puanları Google Drive'a yedekleme
-async function backupToGoogleDrive() {
-  const fileMetadata = {
-    name: 'points_backup.json',
-    parents: ['YOUR_FOLDER_ID'] // Yedeklemenin yapılacağı klasör ID'sini buraya yazın
+// Google Drive yedekleme işlemi
+async function backupPointsToGoogleDrive() {
+  const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
+  const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
+  
+  const auth = new google.auth.GoogleAuth({
+    credentials,
+    scopes: ['https://www.googleapis.com/auth/drive.file'],
+  });
+
+  const drive = google.drive({ version: 'v3', auth });
+
+  const backupData = {
+    weeklyPoints,
+    allTimePoints,
+    serverChannels,
   };
 
+  const fileMetadata = {
+    name: 'points_backup.json',
+    parents: [folderId],
+  };
+  
   const media = {
     mimeType: 'application/json',
-    body: fs.createReadStream('weeklyPoints.json') // Yedeklenecek dosya
+    body: JSON.stringify(backupData),
   };
 
   try {
-    const res = await drive.files.create({
-      auth,
+    const response = await drive.files.create({
       resource: fileMetadata,
-      media: media,
-      fields: 'id'
+      media,
+      fields: 'id',
     });
-    console.log('Yedekleme işlemi başarılı. Yedeklenen dosya ID:', res.data.id);
+    console.log('Yedekleme başarılı. Dosya ID:', response.data.id);
   } catch (error) {
     console.error('Yedekleme işlemi sırasında hata oluştu:', error);
   }
 }
 
-// Her 5 dakikada bir yedekleme işlemi
-setInterval(backupToGoogleDrive, 5 * 60 * 1000);
+// Yedekleme işlemini her 5 dakikada bir yapmak için cron job
+cron.schedule('*/5 * * * *', () => {
+  backupPointsToGoogleDrive();
+});
 
 function getRandomColor() {
   return `#${Math.floor(Math.random() * 16777215).toString(16)}`;
@@ -128,7 +123,6 @@ client.on('messageCreate', async message => {
 
     message.channel.send({ embeds: [embed] });
 
-    // Puanları dosyalara kaydet
     fs.writeFileSync('weeklyPoints.json', JSON.stringify(weeklyPoints, null, 2));
     fs.writeFileSync('allTimePoints.json', JSON.stringify(allTimePoints, null, 2));
   }
@@ -180,13 +174,25 @@ client.on('messageCreate', async message => {
     message.channel.send(`Bu sunucu için partner kanalı olarak <#${message.channel.id}> ayarlandı.`);
   }
 
-  // r!top server komutunu işleme
+  // r!topserver komutunu işleme
+  if (message.content === 'r!topserver') {
+    const guildsArray = Array.from(client.guilds.cache.values());
+    const guildPoints = guildsArray.map(guild => ({
+      name: guild.name,
+      points: Object.values(allTimePoints).reduce((total, points) => total + points, 0)
+    }));
+    const sortedGuilds = guildPoints.sort((a, b) => b.points - a.points);
+
+    paginate(sortedGuilds, message, 'En Çok Partner Yapan Sunucular', guild => `${guild.name} - ${guild.points} puan`);
+  }
+
+  // r!top komutunu işleme
   if (message.content === 'r!top') {
     const guildMembers = message.guild.members.cache;
     const guildAllTimePoints = Object.entries(allTimePoints)
       .filter(([userId]) => guildMembers.has(userId))
       .sort(([, a], [, b]) => b - a);
-
+      
     paginate(guildAllTimePoints, message, 'Bu Sunucuda En Çok Partner Yapanlar :Soiyll_Butterfly: ', ([userId, points]) => {
       const user = guildMembers.get(userId).user;
       return `${user ? user.tag : 'Bilinmeyen Kullanıcı'} - ${points} **Partner** :Soiyll_Butterfly: `;
@@ -231,15 +237,11 @@ function createPaginatedEmbed(data, page, title, formatFunction) {
   const end = start + pageSize;
   const paginatedData = data.slice(start, end);
 
-  const embed = new EmbedBuilder()
+  return new EmbedBuilder()
     .setColor(getRandomColor())
     .setTitle(title)
-    .setDescription(paginatedData.map((item, index) => `${start + index + 1}. ${formatFunction(item)}`).join('\n'));
-
-  const totalPages = Math.ceil(data.length / pageSize);
-  embed.setFooter({ text: `Sayfa ${page} / ${totalPages}` });
-
-  return embed;
+    .setDescription(paginatedData.map((item, index) => `${start + index + 1}. ${formatFunction(item)}`).join('\n'))
+    .setFooter({ text: `Sayfa ${page} / ${Math.ceil(data.length / pageSize)}` }); // Sayfa bilgisi
 }
 
 function createPaginationComponents(page, totalPages) {
@@ -266,4 +268,4 @@ function createPaginationComponents(page, totalPages) {
   ];
 }
 
-client.login('YOUR_DISCORD_BOT_TOKEN'); // Discord bot tokeninizi buraya ekleyin
+client.login(process.env.DISCORD_TOKEN);
