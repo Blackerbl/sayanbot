@@ -112,13 +112,13 @@ client.on('messageCreate', async message => {
 
     const embed = new EmbedBuilder()
       .setColor(getRandomColor())
-      .setTitle(':Soiyll_Butterfly:Yeni Partner:Soiyll_Butterfly:')
-      .setDescription(`:Soiyll_Butterfly: ︰Yeni partner için teşekkürler <@${userId}>!`)
+      .setTitle('<:Soiyll_Butterfly:1230240871585415339>Yeni Partner<:Soiyll_Butterfly:1230240871585415339>')
+      .setDescription(`<:Soiyll_Butterfly:1230240871585415339> ︰Yeni partner için teşekkürler <@${userId}>!`)
       .addFields(
-        { name: ':Soiyll_Butterfly: Haftalık Puan', value: `${userWeeklyPoints} 🏆` },
-        { name: ':Soiyll_Butterfly: Toplam Puan', value: `${userAllTimePoints} 🏆` },
-        { name: ':Soiyll_Butterfly: Haftalık Sıralama', value: `${userWeeklyRank}` },
-        { name: ':Soiyll_Butterfly: Toplam Sıralama', value: `${userAllTimeRank}` },
+        { name: '<:Soiyll_Butterfly:1230240871585415339> Haftalık Puan', value: `${userWeeklyPoints} 🏆` },
+        { name: '<:Soiyll_Butterfly:1230240871585415339> Toplam Puan', value: `${userAllTimePoints} 🏆` },
+        { name: '<:Soiyll_Butterfly:1230240871585415339> Haftalık Sıralama', value: `${userWeeklyRank}` },
+        { name: '<:Soiyll_Butterfly:1230240871585415339> Toplam Sıralama', value: `${userAllTimeRank}` },
       );
 
     message.channel.send({ embeds: [embed] });
@@ -193,9 +193,9 @@ client.on('messageCreate', async message => {
       .filter(([userId]) => guildMembers.has(userId))
       .sort(([, a], [, b]) => b - a);
       
-    paginate(guildAllTimePoints, message, 'Bu Sunucuda En Çok Partner Yapanlar :Soiyll_Butterfly: ', ([userId, points]) => {
+    paginate(guildAllTimePoints, message, 'Bu Sunucuda En Çok Partner Yapanlar <:Soiyll_Butterfly:1230240871585415339> ', ([userId, points]) => {
       const user = guildMembers.get(userId).user;
-      return `${user ? user.tag : 'Bilinmeyen Kullanıcı'} - ${points} **Partner** :Soiyll_Butterfly: `;
+      return `${user ? user.tag : 'Bilinmeyen Kullanıcı'} - ${points} **Partner** <:Soiyll_Butterfly:1230240871585415339> `;
     });
   }
 
@@ -203,9 +203,9 @@ client.on('messageCreate', async message => {
   if (message.content === 'r!topall') {
     const sortedAllTimePoints = Object.entries(allTimePoints).sort(([, a], [, b]) => b - a);
 
-    paginate(sortedAllTimePoints, message, ':Soiyll_Butterfly: En Çok Partner Yapan Kullanıcılar', ([userId, points]) => {
+    paginate(sortedAllTimePoints, message, '<:Soiyll_Butterfly:1230240871585415339> En Çok Partner Yapan Kullanıcılar', ([userId, points]) => {
       const user = client.users.cache.get(userId);
-      return `${user ? user.tag : 'Bilinmeyen Kullanıcı'} - ${points} Partner :Soiyll_Butterfly: `;
+      return `${user ? user.tag : 'Bilinmeyen Kullanıcı'} - ${points} Partner <:Soiyll_Butterfly:1230240871585415339> `;
     });
   }
 });
