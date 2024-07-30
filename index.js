@@ -9,6 +9,8 @@ const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBit
 const weeklyPoints = {};
 const allTimePoints = {};
 const serverChannels = {};
+const drive = google.drive('v3');
+let auth;
 
 // Dosyalardan puanları ve kanal ayarlarını yükleme
 if (fs.existsSync('weeklyPoints.json')) {
@@ -28,7 +30,27 @@ if (fs.existsSync('serverChannels.json')) {
 
 client.once('ready', () => {
   console.log(`Logged in as ${client.user.tag}!`);
+  authorize(); // Google API yetkilendirmesini başlat
 });
+
+// Google API için yetkilendirme
+async function authorize() {
+  const CREDENTIALS = JSON.parse(process.env.GOOGLE_CREDENTIALS);
+  const { client_secret, client_id } = CREDENTIALS.web;
+  const oAuth2Client = new google.auth.OAuth2(client_id, client_secret);
+
+  // Token dosyasını kontrol et
+  const tokenPath = 'token.json';
+  if (fs.existsSync(tokenPath)) {
+    const token = fs.readFileSync(tokenPath);
+    oAuth2Client.setCredentials(JSON.parse(token));
+    auth = oAuth2Client;
+  } else {
+    // Token yoksa yetkilendirme işlemini gerçekleştir
+    console.log('Token bulunamadı. Lütfen yetkilendirme işlemini tamamlayın.');
+    return;
+  }
+}
 
 // Haftalık puanları her Pazar gece yarısı sıfırlamak için cron job
 cron.schedule('0 0 * * 0', () => {
@@ -39,74 +61,35 @@ cron.schedule('0 0 * * 0', () => {
   console.log('Haftalık puanlar sıfırlandı.');
 });
 
-// Google Drive kimlik doğrulaması
-const SCOPES = ['https://www.googleapis.com/auth/drive.file'];
-const TOKEN_PATH = 'token.json'; // OAuth token için
-
-async function authorize() {
-  const { client_secret, client_id, redirect_uris } = JSON.parse(fs.readFileSync('credentials.json'));
-  const oAuth2Client = new google.auth.OAuth2(client_id, client_secret, redirect_uris[0]);
-
-  // Token dosyası varsa yükle
-  if (fs.existsSync(TOKEN_PATH)) {
-    const token = JSON.parse(fs.readFileSync(TOKEN_PATH));
-    oAuth2Client.setCredentials(token);
-  } else {
-    throw new Error('Token dosyası bulunamadı.');
-  }
-
-  return oAuth2Client;
-}
-
 // Puanları Google Drive'a yedekleme
-async function backupPointsToDrive(auth) {
-  const driveService = google.drive({ version: 'v3', auth });
-
-  // Haftalık puanları yedekleme
-  const weeklyPointsBackup = JSON.stringify(weeklyPoints, null, 2);
-  const weeklyFileMetadata = {
-    name: 'weeklyPoints.json',
-    mimeType: 'application/json',
+async function backupToGoogleDrive() {
+  const fileMetadata = {
+    name: 'points_backup.json',
+    parents: ['YOUR_FOLDER_ID'] // Yedeklemenin yapılacağı klasör ID'sini buraya yazın
   };
-  const weeklyFile = await driveService.files.create({
-    requestBody: weeklyFileMetadata,
-    media: {
-      mimeType: 'application/json',
-      body: weeklyPointsBackup,
-    },
-  });
 
-  console.log(`Haftalık puanlar Google Drive’a yedeklendi: ${weeklyFile.data.id}`);
-
-  // Toplam puanları yedekleme
-  const allTimePointsBackup = JSON.stringify(allTimePoints, null, 2);
-  const allTimeFileMetadata = {
-    name: 'allTimePoints.json',
+  const media = {
     mimeType: 'application/json',
+    body: fs.createReadStream('weeklyPoints.json') // Yedeklenecek dosya
   };
-  const allTimeFile = await driveService.files.create({
-    requestBody: allTimeFileMetadata,
-    media: {
-      mimeType: 'application/json',
-      body: allTimePointsBackup,
-    },
-  });
 
-  console.log(`Toplam puanlar Google Drive’a yedeklendi: ${allTimeFile.data.id}`);
-}
-
-// Yedekleme işlemini belirli bir aralıkta yap
-setInterval(async () => {
   try {
-    const auth = await authorize();
-    await backupPointsToDrive(auth);
+    const res = await drive.files.create({
+      auth,
+      resource: fileMetadata,
+      media: media,
+      fields: 'id'
+    });
+    console.log('Yedekleme işlemi başarılı. Yedeklenen dosya ID:', res.data.id);
   } catch (error) {
     console.error('Yedekleme işlemi sırasında hata oluştu:', error);
   }
-}, 5 * 60 * 1000); // 5 dakikada bir
+}
+
+// Her 5 dakikada bir yedekleme işlemi
+setInterval(backupToGoogleDrive, 5 * 60 * 1000);
 
 function getRandomColor() {
-  // Rastgele bir renk oluşturur
   return `#${Math.floor(Math.random() * 16777215).toString(16)}`;
 }
 
@@ -197,13 +180,13 @@ client.on('messageCreate', async message => {
     message.channel.send(`Bu sunucu için partner kanalı olarak <#${message.channel.id}> ayarlandı.`);
   }
 
-  // r!top komutunu işleme
+  // r!top server komutunu işleme
   if (message.content === 'r!top') {
     const guildMembers = message.guild.members.cache;
     const guildAllTimePoints = Object.entries(allTimePoints)
       .filter(([userId]) => guildMembers.has(userId))
       .sort(([, a], [, b]) => b - a);
-      
+
     paginate(guildAllTimePoints, message, 'Bu Sunucuda En Çok Partner Yapanlar :Soiyll_Butterfly: ', ([userId, points]) => {
       const user = guildMembers.get(userId).user;
       return `${user ? user.tag : 'Bilinmeyen Kullanıcı'} - ${points} **Partner** :Soiyll_Butterfly: `;
@@ -248,10 +231,15 @@ function createPaginatedEmbed(data, page, title, formatFunction) {
   const end = start + pageSize;
   const paginatedData = data.slice(start, end);
 
-  return new EmbedBuilder()
+  const embed = new EmbedBuilder()
     .setColor(getRandomColor())
     .setTitle(title)
     .setDescription(paginatedData.map((item, index) => `${start + index + 1}. ${formatFunction(item)}`).join('\n'));
+
+  const totalPages = Math.ceil(data.length / pageSize);
+  embed.setFooter({ text: `Sayfa ${page} / ${totalPages}` });
+
+  return embed;
 }
 
 function createPaginationComponents(page, totalPages) {
@@ -278,4 +266,4 @@ function createPaginationComponents(page, totalPages) {
   ];
 }
 
-client.login(process.env.DISCORD_TOKEN);
+client.login('YOUR_DISCORD_BOT_TOKEN'); // Discord bot tokeninizi buraya ekleyin
