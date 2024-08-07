@@ -2,7 +2,6 @@ require('dotenv').config();
 const { Client, GatewayIntentBits, EmbedBuilder, PermissionsBitField } = require('discord.js');
 const fs = require('fs');
 const cron = require('node-cron');
-const { google } = require('googleapis');
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
 
@@ -39,52 +38,8 @@ cron.schedule('0 0 * * 0', () => {
   console.log('Haftalık puanlar sıfırlandı.');
 });
 
-// Google Drive yedekleme işlemi
-async function backupPointsToGoogleDrive() {
-  const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
-  const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
-  
-  const auth = new google.auth.GoogleAuth({
-    credentials,
-    scopes: ['https://www.googleapis.com/auth/drive.file'],
-  });
-
-  const drive = google.drive({ version: 'v3', auth });
-
-  const backupData = {
-    weeklyPoints,
-    allTimePoints,
-    serverChannels,
-  };
-
-  const fileMetadata = {
-    name: 'points_backup.json',
-    parents: [folderId],
-  };
-  
-  const media = {
-    mimeType: 'application/json',
-    body: JSON.stringify(backupData),
-  };
-
-  try {
-    const response = await drive.files.create({
-      resource: fileMetadata,
-      media,
-      fields: 'id',
-    });
-    console.log('Yedekleme başarılı. Dosya ID:', response.data.id);
-  } catch (error) {
-    console.error('Yedekleme işlemi sırasında hata oluştu:', error);
-  }
-}
-
-// Yedekleme işlemini her 5 dakikada bir yapmak için cron job
-cron.schedule('*/5 * * * *', () => {
-  backupPointsToGoogleDrive();
-});
-
 function getRandomColor() {
+  // Rastgele bir renk oluşturur
   return `#${Math.floor(Math.random() * 16777215).toString(16)}`;
 }
 
@@ -123,6 +78,7 @@ client.on('messageCreate', async message => {
 
     message.channel.send({ embeds: [embed] });
 
+    // Puanları dosyalara kaydet
     fs.writeFileSync('weeklyPoints.json', JSON.stringify(weeklyPoints, null, 2));
     fs.writeFileSync('allTimePoints.json', JSON.stringify(allTimePoints, null, 2));
   }
@@ -240,8 +196,7 @@ function createPaginatedEmbed(data, page, title, formatFunction) {
   return new EmbedBuilder()
     .setColor(getRandomColor())
     .setTitle(title)
-    .setDescription(paginatedData.map((item, index) => `${start + index + 1}. ${formatFunction(item)}`).join('\n'))
-    .setFooter({ text: `Sayfa ${page} / ${Math.ceil(data.length / pageSize)}` }); // Sayfa bilgisi
+    .setDescription(paginatedData.map((item, index) => `${start + index + 1}. ${formatFunction(item)}`).join('\n'));
 }
 
 function createPaginationComponents(page, totalPages) {
