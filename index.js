@@ -1,29 +1,44 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits, EmbedBuilder, PermissionsBitField } = require('discord.js');
+const { Client, GatewayIntentBits, EmbedBuilder, PermissionsBitField, ActionRowBuilder, ButtonBuilder } = require('discord.js');
 const fs = require('fs');
 const cron = require('node-cron');
+const express = require('express'); // Express'i içe aktar
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
 
 const weeklyPoints = {};
 const allTimePoints = {};
+const serverPoints = {};
 const serverChannels = {};
 
+// Express uygulaması oluştur
+const app = express();
+const PORT = process.env.PORT || 3000; // Portu belirtin veya ortam değişkenini kullanın
+
 // Dosyalardan puanları ve kanal ayarlarını yükleme
-if (fs.existsSync('weeklyPoints.json')) {
-  const rawData = fs.readFileSync('weeklyPoints.json');
-  Object.assign(weeklyPoints, JSON.parse(rawData));
+function loadData() {
+  try {
+    if (fs.existsSync('weeklyPoints.json')) {
+      Object.assign(weeklyPoints, JSON.parse(fs.readFileSync('weeklyPoints.json')));
+    }
+
+    if (fs.existsSync('allTimePoints.json')) {
+      Object.assign(allTimePoints, JSON.parse(fs.readFileSync('allTimePoints.json')));
+    }
+
+    if (fs.existsSync('serverPoints.json')) {
+      Object.assign(serverPoints, JSON.parse(fs.readFileSync('serverPoints.json')));
+    }
+
+    if (fs.existsSync('serverChannels.json')) {
+      Object.assign(serverChannels, JSON.parse(fs.readFileSync('serverChannels.json')));
+    }
+  } catch (error) {
+    console.error('Veri yüklenirken hata oluştu:', error);
+  }
 }
 
-if (fs.existsSync('allTimePoints.json')) {
-  const rawData = fs.readFileSync('allTimePoints.json');
-  Object.assign(allTimePoints, JSON.parse(rawData));
-}
-
-if (fs.existsSync('serverChannels.json')) {
-  const rawData = fs.readFileSync('serverChannels.json');
-  Object.assign(serverChannels, JSON.parse(rawData));
-}
+loadData();
 
 client.once('ready', () => {
   console.log(`Logged in as ${client.user.tag}!`);
@@ -31,43 +46,55 @@ client.once('ready', () => {
 
 // Haftalık puanları her Pazar gece yarısı sıfırlamak için cron job
 cron.schedule('0 0 * * 0', () => {
-  for (const userId in weeklyPoints) {
-    weeklyPoints[userId] = 0;
+  for (const guildId in serverPoints) {
+    for (const userId in serverPoints[guildId].weekly) {
+      serverPoints[guildId].weekly[userId] = 0;
+    }
   }
-  fs.writeFileSync('weeklyPoints.json', JSON.stringify(weeklyPoints, null, 2));
+  fs.writeFileSync('serverPoints.json', JSON.stringify(serverPoints, null, 2));
   console.log('Haftalık puanlar sıfırlandı.');
 });
 
 function getRandomColor() {
-  // Rastgele bir renk oluşturur
   return `#${Math.floor(Math.random() * 16777215).toString(16)}`;
 }
+
+// Express endpoint'i tanımlama
+app.get('/', (req, res) => {
+  res.send('Discord botu çalışıyor!');
+});
+
+// Express sunucusunu başlat
+app.listen(PORT, () => {
+  console.log(`Sunucu http://localhost:${PORT} adresinde çalışıyor.`);
+});
 
 client.on('messageCreate', async message => {
   const inviteLinkRegex = /discord(?:\.com|app\.com|\.gg)\/(?:invite\/)?[a-zA-Z0-9-]{2,32}/;
 
+  // Partner mesajlarını kontrol etme
   if (serverChannels[message.guild.id] === message.channel.id && inviteLinkRegex.test(message.content)) {
     const userId = message.author.id;
+    const guildId = message.guild.id;
 
-    if (!weeklyPoints[userId]) {
-      weeklyPoints[userId] = 0;
+    if (!serverPoints[guildId]) {
+      serverPoints[guildId] = { weekly: {}, total: {} };
     }
 
-    if (!allTimePoints[userId]) {
-      allTimePoints[userId] = 0;
-    }
+    // Puanları güncelle
+    serverPoints[guildId].weekly[userId] = (serverPoints[guildId].weekly[userId] || 0) + 1;
+    serverPoints[guildId].total[userId] = (serverPoints[guildId].total[userId] || 0) + 1;
 
-    weeklyPoints[userId] += 1;
-    allTimePoints[userId] += 1;
+    // Kullanıcı puan ve sıralama bilgilerini elde etme
+    const userWeeklyPoints = serverPoints[guildId].weekly[userId];
+    const userAllTimePoints = serverPoints[guildId].total[userId];
+    const userWeeklyRank = Object.values(serverPoints[guildId].weekly).filter(p => p > userWeeklyPoints).length + 1;
+    const userAllTimeRank = Object.values(serverPoints[guildId].total).filter(p => p > userAllTimePoints).length + 1;
 
-    const userWeeklyPoints = weeklyPoints[userId];
-    const userAllTimePoints = allTimePoints[userId];
-    const userWeeklyRank = Object.values(weeklyPoints).filter(p => p > userWeeklyPoints).length + 1;
-    const userAllTimeRank = Object.values(allTimePoints).filter(p => p > userAllTimePoints).length + 1;
-
+    // Mesaj gönderme
     const embed = new EmbedBuilder()
       .setColor(getRandomColor())
-      .setTitle('<:Soiyll_Butterfly:1230240871585415339>Yeni Partner<:Soiyll_Butterfly:1230240871585415339>')
+      .setTitle('<:Soiyll_Butterfly:1230240871585415339> Yeni Partner < :Soiyll_Butterfly:1230240871585415339>')
       .setDescription(`<:Soiyll_Butterfly:1230240871585415339> ︰Yeni partner için teşekkürler <@${userId}>!`)
       .addFields(
         { name: '<:Soiyll_Butterfly:1230240871585415339> Haftalık Puan', value: `${userWeeklyPoints} 🏆` },
@@ -79,39 +106,36 @@ client.on('messageCreate', async message => {
     message.channel.send({ embeds: [embed] });
 
     // Puanları dosyalara kaydet
-    fs.writeFileSync('weeklyPoints.json', JSON.stringify(weeklyPoints, null, 2));
-    fs.writeFileSync('allTimePoints.json', JSON.stringify(allTimePoints, null, 2));
+    fs.writeFileSync('serverPoints.json', JSON.stringify(serverPoints, null, 2));
   }
 
-  // r!partnerdurum komutunu işleme
-  if (message.content.startsWith('r!partnerdurum')) {
+  // r!puan komutunu işleme
+  if (message.content.startsWith('r!puan')) {
     const args = message.content.split(' ');
-    if (args.length < 2) {
-      return message.reply('Lütfen bir kullanıcı belirtin.');
-    }
+    const userId = args[1] ? args[1].replace(/[<@!>]/g, '') : message.author.id;
+    const guildId = message.guild.id;
 
-    const user = message.mentions.users.first() || message.guild.members.cache.get(args[1]).user;
-
-    if (!user) {
-      return message.reply('Belirtilen kullanıcı bulunamadı.');
-    }
-
-    const userId = user.id;
-    const userWeeklyPoints = weeklyPoints[userId] || 0;
-    const userAllTimePoints = allTimePoints[userId] || 0;
-    const userWeeklyRank = Object.values(weeklyPoints).filter(p => p > userWeeklyPoints).length + 1;
-    const userAllTimeRank = Object.values(allTimePoints).filter(p => p > userAllTimePoints).length + 1;
+    const userWeeklyPoints = serverPoints[guildId]?.weekly[userId] || 0;
+    const userAllTimePoints = serverPoints[guildId]?.total[userId] || 0;
+    const userWeeklyRank = Object.values(serverPoints[guildId]?.weekly || {}).filter(p => p > userWeeklyPoints).length + 1;
+    const userAllTimeRank = Object.values(serverPoints[guildId]?.total || {}).filter(p => p > userAllTimePoints).length + 1;
 
     const embed = new EmbedBuilder()
       .setColor(getRandomColor())
-      .setTitle(`${user.tag} için Partner Puanları`)
-      .addFields(
-        { name: '︶ ͡ ۫ ˓ ʚ🪷ɞ ˒ ۫ ͡ ︶', value: '\u200B' }, // Boş bir alan için, yalnızca stil amaçlı
-        { name: '🪽︰ Toplam Puan', value: `**${userAllTimePoints} 🏆**` },
-        { name: '🕯️︰ Haftalık Puan', value: `**${userWeeklyPoints} 🏆**` },
-        { name: '☁️︰ Haftalık Sıralama', value: `**${userWeeklyRank}**` },
-        { name: '🦢︰ Toplam Sıralama', value: `**${userAllTimeRank}**` },
-        { name: '︶ ͡ ۫ ˓ ʚ🪷ɞ ˒ ۫ ͡ ︶', value: '\u200B' } // Boş bir alan için, yalnızca stil amaçlı
+      .setTitle('<:Soiyll_Butterfly:1230240871585415339> Partner Puanları')
+      .setDescription(
+        `ㅤㅤ ㅤ‿︵˓ ʚ🪷ɞ ˓ ︵ ͜
+        🪽︰<@${userId}> için puan durumu;
+        🕯️︰
+        **Haftalık Puan:** ${userWeeklyPoints}
+        ☁️︰
+        **Haftalık Sıralama:** ${userWeeklyRank}
+        🐚︰
+        **Toplam Puan:** ${userAllTimePoints}
+        🦢︰
+        **Toplam Sıralama:** ${userAllTimeRank}   ㅤ   💌
+        ㅤㅤㅤㅤ  ㅤ 
+        ㅤㅤㅤ︶ ͡ ۫ ˓ ʚ🪷ɞ ˒ ۫ ͡ ︶`
       );
 
     message.channel.send({ embeds: [embed] });
@@ -119,23 +143,27 @@ client.on('messageCreate', async message => {
 
   // r!partnerkanalayarla komutunu işleme
   if (message.content.startsWith('r!partnerkanalayarla')) {
-    if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-      return message.reply('Bu komutu kullanmak için yetkiniz yok.');
+    if (!message.member.permissions.has(PermissionsBitField.Flags.ManageGuild)) {
+      return message.reply('Bu komutu kullanmak için Sunucu Yönetme yetkisine sahip olmalısınız.');
     }
 
-    serverChannels[message.guild.id] = message.channel.id;
+    const args = message.content.split(' ');
+    const channelId = args[1]?.replace(/[<#>]/g, '');
 
+    if (!channelId) {
+      return message.reply('Lütfen geçerli bir kanal ID belirtin.');
+    }
+
+    serverChannels[message.guild.id] = channelId;
     fs.writeFileSync('serverChannels.json', JSON.stringify(serverChannels, null, 2));
-
-    message.channel.send(`Bu sunucu için partner kanalı olarak <#${message.channel.id}> ayarlandı.`);
+    message.reply(`Partner kanalı başarıyla ayarlandı: <#${channelId}>`);
   }
 
   // r!topserver komutunu işleme
   if (message.content === 'r!topserver') {
-    const guildsArray = Array.from(client.guilds.cache.values());
-    const guildPoints = guildsArray.map(guild => ({
-      name: guild.name,
-      points: Object.values(allTimePoints).reduce((total, points) => total + points, 0)
+    const guildPoints = Object.entries(serverPoints).map(([guildId, points]) => ({
+      name: client.guilds.cache.get(guildId)?.name || 'Bilinmeyen Sunucu',
+      points: Object.values(points.total).reduce((total, points) => total + points, 0)
     }));
     const sortedGuilds = guildPoints.sort((a, b) => b.points - a.points);
 
@@ -144,14 +172,14 @@ client.on('messageCreate', async message => {
 
   // r!top komutunu işleme
   if (message.content === 'r!top') {
+    const guildId = message.guild.id;
     const guildMembers = message.guild.members.cache;
-    const guildAllTimePoints = Object.entries(allTimePoints)
-      .filter(([userId]) => guildMembers.has(userId))
+    const guildAllTimePoints = Object.entries(serverPoints[guildId]?.total || {})
       .sort(([, a], [, b]) => b - a);
-      
-    paginate(guildAllTimePoints, message, 'Bu Sunucuda En Çok Partner Yapanlar <:Soiyll_Butterfly:1230240871585415339> ', ([userId, points]) => {
-      const user = guildMembers.get(userId).user;
-      return `${user ? user.tag : 'Bilinmeyen Kullanıcı'} - ${points} **Partner** <:Soiyll_Butterfly:1230240871585415339> `;
+
+    paginate(guildAllTimePoints, message, 'Bu Sunucuda En Çok Partner Yapanlar <:Soiyll_Butterfly:1230240871585415339>', ([userId, points]) => {
+      const user = guildMembers.get(userId)?.user;
+      return `${user ? user.tag : 'Bilinmeyen Kullanıcı'} - ${points} **Partner** <:Soiyll_Butterfly:1230240871585415339>`;
     });
   }
 
@@ -159,68 +187,72 @@ client.on('messageCreate', async message => {
   if (message.content === 'r!topall') {
     const sortedAllTimePoints = Object.entries(allTimePoints).sort(([, a], [, b]) => b - a);
 
-    paginate(sortedAllTimePoints, message, '<:Soiyll_Butterfly:1230240871585415339> En Çok Partner Yapan Kullanıcılar', ([userId, points]) => {
+    paginate(sortedAllTimePoints, message, '<:Soiyll_Butterfly:1230240871585415339> Tüm Zamanların En İyileri <:Soiyll_Butterfly:1230240871585415339>', ([userId, points]) => {
       const user = client.users.cache.get(userId);
-      return `${user ? user.tag : 'Bilinmeyen Kullanıcı'} - ${points} Partner <:Soiyll_Butterfly:1230240871585415339> `;
+      return `${user ? user.tag : 'Bilinmeyen Kullanıcı'} - ${points} **Partner** <:Soiyll_Butterfly:1230240871585415339>`;
     });
   }
 });
 
-client.on('interactionCreate', async interaction => {
-  if (!interaction.isButton()) return;
+// Sayfalama fonksiyonu
+function paginate(data, message, title, format) {
+  const itemsPerPage = 10; // Sayfa başına gösterilecek öğe sayısı
+  const totalPages = Math.ceil(data.length / itemsPerPage);
+  
+  let currentPage = 0;
 
-  const [action, page, ...data] = interaction.customId.split('_');
+  const updateEmbed = () => {
+    const start = currentPage * itemsPerPage;
+    const end = start + itemsPerPage;
+    const currentItems = data.slice(start, end).map(format).join('\n') || 'Hiçbir veri yok.';
 
-  if (action === 'paginate') {
-    const embed = createPaginatedEmbed(data, parseInt(page, 10));
-    await interaction.update({ embeds: [embed], components: createPaginationComponents(parseInt(page, 10), data.length) });
-  }
-});
+    const embed = new EmbedBuilder()
+      .setColor(getRandomColor())
+      .setTitle(title)
+      .setDescription(currentItems)
+      .setFooter({ text: `Sayfa ${currentPage + 1} / ${totalPages}` });
 
-function paginate(data, message, title, formatFunction) {
-  const pageSize = 10;
-  const totalPages = Math.ceil(data.length / pageSize);
+    message.channel.send({ embeds: [embed] }).then(sentMessage => {
+      // Sayfalar arasında geçiş yapmak için butonlar ekleyelim
+      if (totalPages > 1) {
+        const row = new ActionRowBuilder()
+          .addComponents(
+            new ButtonBuilder()
+              .setCustomId('prev')
+              .setLabel('Önceki')
+              .setDisabled(currentPage === 0)
+              .setStyle('PRIMARY'),
+            new ButtonBuilder()
+              .setCustomId('next')
+              .setLabel('Sonraki')
+              .setDisabled(currentPage === totalPages - 1)
+              .setStyle('PRIMARY')
+          );
 
-  const embed = createPaginatedEmbed(data, 1, title, formatFunction);
-  const components = createPaginationComponents(1, totalPages);
+        sentMessage.edit({ components: [row] });
 
-  message.channel.send({ embeds: [embed], components });
+        const filter = interaction => interaction.user.id === message.author.id;
+
+        const collector = sentMessage.createMessageComponentCollector({ filter, time: 60000 });
+
+        collector.on('collect', interaction => {
+          if (interaction.customId === 'next') {
+            currentPage++;
+          } else if (interaction.customId === 'prev') {
+            currentPage--;
+          }
+          updateEmbed();
+          interaction.deferUpdate();
+        });
+
+        collector.on('end', () => {
+          sentMessage.edit({ components: [] }); // Butonları kaldır
+        });
+      }
+    });
+  };
+
+  updateEmbed();
 }
 
-function createPaginatedEmbed(data, page, title, formatFunction) {
-  const pageSize = 10;
-  const start = (page - 1) * pageSize;
-  const end = start + pageSize;
-  const paginatedData = data.slice(start, end);
-
-  return new EmbedBuilder()
-    .setColor(getRandomColor())
-    .setTitle(title)
-    .setDescription(paginatedData.map((item, index) => `${start + index + 1}. ${formatFunction(item)}`).join('\n'));
-}
-
-function createPaginationComponents(page, totalPages) {
-  return [
-    {
-      type: 1,
-      components: [
-        {
-          type: 2,
-          style: 1,
-          label: '⬅️',
-          customId: `paginate_${page - 1}`,
-          disabled: page === 1
-        },
-        {
-          type: 2,
-          style: 1,
-          label: '➡️',
-          customId: `paginate_${page + 1}`,
-          disabled: page === totalPages
-        }
-      ]
-    }
-  ];
-}
-
-client.login(process.env.DISCORD_TOKEN);
+client.login(process.env.BOT_TOKEN);
