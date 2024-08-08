@@ -63,12 +63,23 @@ client.once('ready', () => {
 // Kullanıcıya dosyaları gönderen fonksiyon
 async function sendFilesToUser(userId, fileNames) {
   const user = await client.users.fetch(userId);
+  
+  // fileNames dizisinin geçerli olup olmadığını kontrol et
+  if (!Array.isArray(fileNames) || fileNames.length === 0) {
+    throw new Error('Dosya isimleri geçerli bir dizi olmalıdır.');
+  }
+
   const attachments = fileNames.map(fileName => ({
     attachment: `./${fileName}`,
     name: fileName
   }));
 
-  await user.send({ files: attachments });
+  // Dosyaların başarıyla gönderilip gönderilemeyeceğini kontrol et
+  if (attachments.length > 0) {
+    await user.send({ files: attachments });
+  } else {
+    console.error('Gönderilecek dosya bulunamadı.');
+  }
 }
 
 // Express endpoint'i tanımlama
