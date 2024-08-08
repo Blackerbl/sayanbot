@@ -229,8 +229,11 @@ function paginate(sortedPoints, message, title, formatUser) {
   sendPage(currentPage);
 }
 
+// Rastgele renk üretme fonksiyonu
 function getRandomColor() {
-  return Math.floor(Math.random() * 16777215).toString(16);
+  const color = `#${Math.floor(Math.random() * 16777215).toString(16)}`;
+  console.log(`Generated color: ${color}`); // Renk kodunu konsola yazdır
+  return color;
 }
 
 client.login(process.env.DISCORD_TOKEN);
