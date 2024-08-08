@@ -54,6 +54,23 @@ client.once('ready', () => {
   });
 });
 
+// Durum güncellemeleri için bir dizi oluştur
+  const statuses = [
+    'Sayıyoruz La',
+    'Kekenin Selamı Var!',
+    'Sorun Varsa Keke_km yaz',
+    'Sunucularınızı yönetiyorum!',
+    'Hiçbirşey Aynı Değil !',
+    '${guildCount} Sunucudayız Keke ',
+    'A!yardım Yazarak Komutlarımı Görebilirsin :} ',
+  ];
+
+  // Her 10 saniyede bir durumu değiştir
+  setInterval(() => {
+    const status = statuses[Math.floor(Math.random() * statuses.length)];
+    client.user.setActivity(status, { type: 'WATCHING' });
+  }, 10000); // 10000 milisaniye = 10 saniye
+
 async function sendFilesToUser(userId, fileNames) {
   const user = await client.users.fetch(userId);
   const attachments = fileNames.map(fileName => ({
@@ -117,6 +134,43 @@ client.on('messageCreate', async (message) => {
     fs.writeFileSync('serverPoints.json', JSON.stringify(serverPoints, null, 2));
   }
 
+client.on('messageCreate', async (message) => {
+  if (message.content === 'A!bilgi') {
+    const botInfoEmbed = new EmbedBuilder()
+      .setColor(getRandomColor())
+      .setTitle('Bot Bilgisi')
+      .setDescription('Aşağıda bot hakkında bazı bilgiler bulunmaktadır:')
+      .addFields(
+        { name: 'Bot Adı', value: `${client.user.username}`, inline: true },
+        { name: 'Bot ID', value: `${client.user.id}`, inline: true },
+        { name: 'Toplam Sunucu Sayısı', value: `${client.guilds.cache.size}`, inline: true },
+        { name: 'Yapımcı', value: 'Keke_km', inline: true }, // Burada yapımcının adını yazabilirsin
+        { name: 'Versiyon', value: '0.0.0', inline: true } // Bot versiyonunu buraya yazabilirsin
+      )
+      .setFooter('Daha fazla bilgi için A!yardım komutunu kullanabilirsiniz.');
+
+    message.channel.send({ embeds: [botInfoEmbed] });
+  }
+
+   if (message.content === 'A!yardım') {
+    const helpEmbed = new EmbedBuilder()
+      .setColor(getRandomColor())
+      .setTitle('Bot Komutları')
+      .setDescription('Aşağıda botun tüm komutları ve açıklamaları bulunmaktadır:')
+      .addFields(
+        { name: 'A!yedekle', value: 'Yedekleme dosyalarını size gönderir.', inline: true },
+        { name: 'A!puan [@kullanıcı]', value: 'Belirtilen kullanıcının puan durumunu gösterir.', inline: true },
+        { name: 'A!partnerkanalayarla [kanal ID]', value: 'Partner mesajlarının gönderileceği kanalı ayarlar.', inline: true },
+        { name: 'A!top', value: 'Bu sunucuda en çok partner yapan kullanıcıları listeler.', inline: true },
+        { name: 'A!topall', value: 'Tüm sunucularda en çok partner yapan kullanıcıları listeler.', inline: true },
+        { name: 'A!topserver', value: 'En çok partner yapan sunucuları sıralar.', inline: true },
+        { name: 'A!bilgi', value: 'Bot hakkında bilgi verir.', inline: true }
+      )
+      .setFooter('Daha fazla bilgi için bu komutları kullanabilirsiniz.');
+
+    message.channel.send({ embeds: [helpEmbed] });
+  }
+
   if (message.content.startsWith('A!puan')) {
     const args = message.content.split(' ');
     const userId = args[1] ? args[1].replace(/[<@!>]/g, '') : message.author.id;
@@ -133,7 +187,7 @@ client.on('messageCreate', async (message) => {
       .setDescription(
         `ㅤㅤ ㅤ‿︵˓ ʚ🪷ɞ ˓ ︵ ͜
         🪽︰<@${userId}> için puan durumu;
-        
+
         🕯️︰**Haftalık Puan:** ${userWeeklyPoints}
         
         ☁️︰**Haftalık Sıralama:** ${userWeeklyRank}
