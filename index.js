@@ -154,6 +154,11 @@ if (message.content === 'A!bilgi') {
 
 // A!partnerkanalayarla komutunu işleme
 if (message.content.startsWith('A!partnerkanalayarla')) {
+  // Kullanıcının yönetici yetkisi olup olmadığını kontrol et
+  if (!message.member.permissions.has('ADMINISTRATOR')) {
+    return message.channel.send('Bu komutu kullanmak için yönetici iznine sahip olmalısınız.');
+  }
+
   const args = message.content.split(' ').slice(1); // Komuttan sonraki kısmı al
   const channelMention = args[0]; // Ayarlanacak kanalın etiketini al
   
@@ -176,7 +181,7 @@ if (message.content.startsWith('A!partnerkanalayarla')) {
   serverChannels[message.guild.id].partnerChannel = channelId;
 
   message.channel.send(`Partner kanalı başarıyla ayarlandı: <#${channelId}>`);
-}
+
 
   if (message.content === 'A!yardım') {
     const helpEmbed = new EmbedBuilder()
