@@ -73,7 +73,7 @@ async function sendFilesToUser(userId, fileNames) {
 
 // Express endpoint'i tanımlama
 app.get('/', (req, res) => {
-  res.send('Discord botu çalışıyor!');
+  res.send('Discord botu aktif');
 });
 
 // Express sunucusunu başlat
@@ -81,9 +81,9 @@ app.listen(PORT, () => {
   console.log(`Sunucu http://localhost:${PORT} adresinde çalışıyor.`);
 });
 
-// R!yedekle komutunu işleme
+// A!yedekle komutunu işleme
 client.on('messageCreate', async message => {
-  if (message.content.startsWith('R!yedekle')) {
+  if (message.content.startsWith('A!yedekle')) {
     await sendFilesToUser(message.author.id);
   }
 
@@ -126,8 +126,8 @@ client.on('messageCreate', async message => {
     fs.writeFileSync('serverPoints.json', JSON.stringify(serverPoints, null, 2));
   }
 
-  // r!puan komutunu işleme
-  if (message.content.startsWith('r!puan')) {
+  // A!puan komutunu işleme
+  if (message.content.startsWith('A!puan')) {
     const args = message.content.split(' ');
     const userId = args[1] ? args[1].replace(/[<@!>]/g, '') : message.author.id;
     const guildId = message.guild.id;
@@ -158,8 +158,8 @@ client.on('messageCreate', async message => {
     message.channel.send({ embeds: [embed] });
   }
 
-  // r!partnerkanalayarla komutunu işleme
-  if (message.content.startsWith('r!partnerkanalayarla')) {
+  // A!partnerkanalayarla komutunu işleme
+  if (message.content.startsWith('A!partnerkanalayarla')) {
     if (!message.member.permissions.has(PermissionsBitField.Flags.ManageGuild)) {
       return message.reply('Bu komutu kullanmak için Sunucu Yönetme yetkisine sahip olmalısınız.');
     }
@@ -176,8 +176,8 @@ client.on('messageCreate', async message => {
     message.reply(`Partner kanalı başarıyla ayarlandı: <#${channelId}>`);
   }
 
-  // r!top komutunu işleme
-  if (message.content === 'r!top') {
+  // A!top komutunu işleme
+  if (message.content === 'A!top') {
     const guildId = message.guild.id;
     const sortedWeeklyPoints = Object.entries(serverPoints[guildId]?.weekly || {}).sort(([, a], [, b]) => b - a);
 
@@ -185,8 +185,8 @@ client.on('messageCreate', async message => {
     paginate(sortedWeeklyPoints, message, 'Bu Sunucuda En Çok Partner Yapanlar <:Soiyll_Butterfly:1230240871585415339>', user => `<@${user[0]}> - ${user[1]} puan`);
   }
 
-  // r!topall komutunu işleme
-  if (message.content === 'r!topall') {
+  // A!topall komutunu işleme
+  if (message.content === 'A!topall') {
     const allPoints = {};
 
     // Tüm sunuculardaki puanları toplama
