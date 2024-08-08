@@ -152,6 +152,31 @@ if (message.content === 'A!bilgi') {
   message.channel.send({ embeds: [botInfoEmbed] });
 }
 
+// A!partnerkanalayarla komutunu işleme
+if (message.content.startsWith('A!partnerkanalayarla')) {
+  const args = message.content.split(' ').slice(1); // Komuttan sonraki kısmı al
+  const channelMention = args[0]; // Ayarlanacak kanalın etiketini al
+  
+  if (!channelMention) {
+    return message.channel.send('Lütfen bir kanal belirtin.');
+  }
+  
+  const channelId = channelMention.replace(/[<#>]/g, ''); // Kanal ID'sini çıkar
+  const channel = client.channels.cache.get(channelId);
+  
+  if (!channel || channel.guild.id !== message.guild.id) {
+    return message.channel.send('Geçersiz kanal. Lütfen bu sunucuda bulunan bir kanal belirtin.');
+  }
+
+  // Sunucunun partner kanalı olarak ayarlayın
+  if (!serverChannels[message.guild.id]) {
+    serverChannels[message.guild.id] = {};
+  }
+
+  serverChannels[message.guild.id].partnerChannel = channelId;
+
+  message.channel.send(`Partner kanalı başarıyla ayarlandı: <#${channelId}>`);
+}
 
   if (message.content === 'A!yardım') {
     const helpEmbed = new EmbedBuilder()
@@ -165,7 +190,7 @@ if (message.content === 'A!bilgi') {
         { name: 'A!topall', value: 'Tüm sunucularda en çok partner yapan kullanıcıları listeler.', inline: true },
         { name: 'A!topserver', value: 'En çok partner yapan sunucuları sıralar.', inline: true },
         { name: 'A!bilgi', value: 'Bot hakkında bilgi verir.', inline: false }
-      )
+      ){ name: 'A!partnerkanalayarla value: 'Sunucunun Partner kanalını ayarlar', inline: true },
     message.channel.send({ embeds: [helpEmbed] });
   }
 
