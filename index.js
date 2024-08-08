@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits, EmbedBuilder, PermissionsBitField } = require('discord.js');
+const { Client, GatewayIntentBits, EmbedBuilder, PermissionsBitField, MessageActionRow, ButtonBuilder } = require('discord.js');
 const fs = require('fs');
 const cron = require('node-cron');
 const express = require('express');
@@ -104,13 +104,13 @@ client.on('messageCreate', async (message) => {
 
     const embed = new EmbedBuilder()
       .setColor(getRandomColor())
-      .setTitle('<:Soiyll_Butterfly:1230240871585415339> Yeni Partner <:Soiyll_Butterfly:1230240871585415339>')
-      .setDescription(`<:Soiyll_Butterfly:1230240871585415339> ︰Yeni partner için teşekkürler <@${userId}>!`)
+      .setTitle('<a:kelebek:1271049122090192958> Yeni Partner <a:kelebek:1271049122090192958>')
+      .setDescription(`<a:kelebek:1271049122090192958> ︰Yeni partner için teşekkürler <@${userId}>!`)
       .addFields(
-        { name: '<:Soiyll_Butterfly:1230240871585415339> Haftalık Puan', value: `${userWeeklyPoints} 🏆` },
-        { name: '<:Soiyll_Butterfly:1230240871585415339> Toplam Puan', value: `${userAllTimePoints} 🏆` },
-        { name: '<:Soiyll_Butterfly:1230240871585415339> Haftalık Sıralama', value: `${userWeeklyRank}` },
-        { name: '<:Soiyll_Butterfly:1230240871585415339> Toplam Sıralama', value: `${userAllTimeRank}` },
+        { name: '<a:kelebek:1271049122090192958> Haftalık Puan', value: `${userWeeklyPoints} 🏆` },
+        { name: '<a:kelebek:1271049122090192958> Toplam Puan', value: `${userAllTimePoints} 🏆` },
+        { name: '<a:kelebek:1271049122090192958> Haftalık Sıralama', value: `${userWeeklyRank}` },
+        { name: '<a:kelebek:1271049122090192958> Toplam Sıralama', value: `${userAllTimeRank}` },
       );
 
     message.channel.send({ embeds: [embed] });
@@ -129,18 +129,18 @@ client.on('messageCreate', async (message) => {
 
     const embed = new EmbedBuilder()
       .setColor(getRandomColor())
-      .setTitle('<:Soiyll_Butterfly:1230240871585415339> Partner Puanları')
+      .setTitle('<a:kelebek:1271049122090192958> Partner Puanları')
       .setDescription(
         `ㅤㅤ ㅤ‿︵˓ ʚ🪷ɞ ˓ ︵ ͜
         🪽︰<@${userId}> için puan durumu;
-        🕯️︰
-        **Haftalık Puan:** ${userWeeklyPoints}
-        ☁️︰
-        **Haftalık Sıralama:** ${userWeeklyRank}
-        🐚︰
-        **Toplam Puan:** ${userAllTimePoints}
-        🦢︰
-        **Toplam Sıralama:** ${userAllTimeRank}   ㅤ   💌
+        
+        🕯️︰**Haftalık Puan:** ${userWeeklyPoints}
+        
+        ☁️︰**Haftalık Sıralama:** ${userWeeklyRank}
+        
+        🐚︰**Toplam Puan:** ${userAllTimePoints}
+        
+        🦢︰**Toplam Sıralama:** ${userAllTimeRank}   ㅤ   💌
         ㅤㅤㅤㅤ  ㅤ 
         ㅤㅤㅤ︶ ͡ ۫ ˓ ʚ🪷ɞ ˒ ۫ ͡ ︶`
       );
@@ -169,7 +169,7 @@ client.on('messageCreate', async (message) => {
   if (message.content === 'A!top') {
     const guildId = message.guild.id;
     const sortedWeeklyPoints = Object.entries(serverPoints[guildId]?.weekly || {}).sort(([, a], [, b]) => b - a);
-    paginate(sortedWeeklyPoints, message, 'Bu Sunucuda En Çok Partner Yapanlar <:Soiyll_Butterfly:1230240871585415339>', user => `<@${user[0]}> - ${user[1]} puan`);
+    paginate(sortedWeeklyPoints, message, 'Bu Sunucuda En Çok Partner Yapanlar <a:kelebek:1271049122090192958>', user => `<@${user[0]}> - ${user[1]} puan`);
   }
 
   // A!topall komutunu işleme
@@ -186,16 +186,68 @@ client.on('messageCreate', async (message) => {
     });
 
     const sortedAllTimePoints = Object.entries(allPoints).sort(([, a], [, b]) => b - a);
-    paginate(sortedAllTimePoints, message, 'Tüm Sunucularda En Çok Partner Yapanlar <:Soiyll_Butterfly:1230240871585415339>', user => `<@${user[0]}> - ${user[1]} puan`);
+    paginate(sortedAllTimePoints, message, 'Tüm Sunucularda En Çok Partner Yapanlar <a:kelebek:1271049122090192958>', user => `<@${user[0]}> - ${user[1]} puan`);
   }
 
   // A!topserver komutunu işleme
-  if (message.content === 'A!topserver') {
-    const guildId = message.guild.id;
-    const sortedServerPoints = Object.entries(serverPoints[guildId]?.total || {}).sort(([, a], [, b]) => b - a);
-    paginate(sortedServerPoints, message, 'Bu Sunucuda En Çok Partner Yapanlar <:Soiyll_Butterfly:1230240871585415339>', user => `<@${user[0]}> - ${user[1]} puan`);
-  }
-});
+if (message.content === 'A!topserver') {
+  const sortedServerPoints = Object.entries(serverPoints)
+    .map(([guildId, points]) => {
+      const totalPoints = Object.values(points.total).reduce((acc, cur) => acc + cur, 0);
+      return { guildId, totalPoints };
+    })
+    .sort((a, b) => b.totalPoints - a.totalPoints); // En çok puan alana göre sıralama
+
+  const embed = new EmbedBuilder()
+    .setColor(getRandomColor())
+    .setTitle('En Çok Partner Yapan Sunucular')
+    .setDescription(
+      sortedServerPoints.length > 0
+        ? sortedServerPoints.map((server, index) => 
+            `**${index + 1}.** <${server.guildId}> - ${server.totalPoints} puan`
+          ).join('\n')
+        : 'Henüz hiç partner yapılmadı.'
+    );
+
+  // Butonlar oluşturma
+  const row = new MessageActionRow()
+    .addComponents(
+      new ButtonBuilder()
+        .setCustomId('refresh')
+        .setLabel('Yenile')
+        .setStyle('PRIMARY'),
+      new ButtonBuilder()
+        .setCustomId('details')
+        .setLabel('Detaylar')
+        .setStyle('SECONDARY')
+    );
+
+  const msg = await message.channel.send({ embeds: [embed], components: [row] });
+
+  // Buton etkileşimlerini işleme
+  const filter = i => {
+    i.deferUpdate();
+    return i.user.id === message.author.id; // Sadece mesajı atan kullanıcı
+  };
+
+  const collector = msg.createMessageComponentCollector({ filter, time: 60000 });
+
+  collector.on('collect', async (interaction) => {
+    if (interaction.customId === 'refresh') {
+      // Yenileme işlemleri
+      await interaction.editReply({ embeds: [embed], components: [row] });
+    } else if (interaction.customId === 'details') {
+      // Detay gösterimi
+      await interaction.followUp({ content: 'Detaylar burada gösterilecek!', ephemeral: true });
+    }
+  });
+
+  collector.on('end', () => {
+    // Butonları devre dışı bırakma
+    row.components.forEach(button => button.setDisabled(true));
+    msg.edit({ components: [row] });
+  });
+}
 
 // Sayfa başına gönderilen sonuçları işleyen fonksiyon
 function paginate(sortedPoints, message, title, formatUser) {
