@@ -55,21 +55,21 @@ client.once('ready', () => {
 });
 
 // Durum güncellemeleri için bir dizi oluştur
-  const statuses = [
-    'Sayıyoruz La',
-    'Kekenin Selamı Var!',
-    'Sorun Varsa Keke_km yaz',
-    'Sunucularınızı yönetiyorum!',
-    'Hiçbirşey Aynı Değil !',
-    '${guildCount} Sunucudayız Keke ',
-    'A!yardım Yazarak Komutlarımı Görebilirsin :} ',
-  ];
+const statuses = [
+  'Sayıyoruz La',
+  'Kekenin Selamı Var!',
+  'Sorun Varsa Keke_km yaz',
+  'Sunucularınızı yönetiyorum!',
+  'Hiçbirşey Aynı Değil !',
+  '${guildCount} Sunucudayız Keke ',
+  'A!yardım Yazarak Komutlarımı Görebilirsin :} ',
+];
 
-  // Her 10 saniyede bir durumu değiştir
-  setInterval(() => {
-    const status = statuses[Math.floor(Math.random() * statuses.length)];
-    client.user.setActivity(status, { type: 'WATCHING' });
-  }, 10000); // 10000 milisaniye = 10 saniye
+// Her 10 saniyede bir durumu değiştir
+setInterval(() => {
+  const status = statuses[Math.floor(Math.random() * statuses.length)];
+  client.user.setActivity(status, { type: 'WATCHING' });
+}, 10000); // 10000 milisaniye = 10 saniye
 
 async function sendFilesToUser(userId, fileNames) {
   const user = await client.users.fetch(userId);
@@ -134,40 +134,38 @@ client.on('messageCreate', async (message) => {
     fs.writeFileSync('serverPoints.json', JSON.stringify(serverPoints, null, 2));
   }
 
-client.on('messageCreate', async (message) => {
-  if (message.content === 'A!bilgi') {
-    const botInfoEmbed = new EmbedBuilder()
-      .setColor(getRandomColor())
-      .setTitle('Bot Bilgisi')
-      .setDescription('Aşağıda bot hakkında bazı bilgiler bulunmaktadır:')
-      .addFields(
-        { name: 'Bot Adı', value: `${client.user.username}`, inline: true },
-        { name: 'Bot ID', value: `${client.user.id}`, inline: true },
-        { name: 'Toplam Sunucu Sayısı', value: `${client.guilds.cache.size}`, inline: true },
-        { name: 'Yapımcı', value: 'Keke_km', inline: true }, // Burada yapımcının adını yazabilirsin
-        { name: 'Versiyon', value: '0.0.0', inline: true } // Bot versiyonunu buraya yazabilirsin
-      )
-      .setFooter('Daha fazla bilgi için A!yardım komutunu kullanabilirsiniz.');
+if (message.content === 'A!bilgi') {
+  const botInfoEmbed = new EmbedBuilder()
+    .setColor(getRandomColor())
+    .setTitle('Bot Bilgisi')
+    .setDescription('Aşağıda bot hakkında bazı bilgiler bulunmaktadır:')
+    .addFields(
+      { name: 'Bot Adı', value: `${client.user.username}`, inline: true },
+      { name: 'Destek Sunucusu ', value: `https://discord.gg/FUTaWCytme`, inline: true },
+      { name: 'Toplam Sunucu Sayısı', value: `${client.guilds.cache.size}`, inline: true },
+      { name: 'Yapımcı', value: 'Keke_km', inline: true },
+      { name: 'Versiyon', value: '0.0.0', inline: true }
+    )
+    
 
-    message.channel.send({ embeds: [botInfoEmbed] });
-  }
+  // Embed'i gönder
+  message.channel.send({ embeds: [botInfoEmbed] });
+}
 
-   if (message.content === 'A!yardım') {
+
+  if (message.content === 'A!yardım') {
     const helpEmbed = new EmbedBuilder()
       .setColor(getRandomColor())
       .setTitle('Bot Komutları')
       .setDescription('Aşağıda botun tüm komutları ve açıklamaları bulunmaktadır:')
       .addFields(
-        { name: 'A!yedekle', value: 'Yedekleme dosyalarını size gönderir.', inline: true },
         { name: 'A!puan [@kullanıcı]', value: 'Belirtilen kullanıcının puan durumunu gösterir.', inline: true },
         { name: 'A!partnerkanalayarla [kanal ID]', value: 'Partner mesajlarının gönderileceği kanalı ayarlar.', inline: true },
         { name: 'A!top', value: 'Bu sunucuda en çok partner yapan kullanıcıları listeler.', inline: true },
         { name: 'A!topall', value: 'Tüm sunucularda en çok partner yapan kullanıcıları listeler.', inline: true },
         { name: 'A!topserver', value: 'En çok partner yapan sunucuları sıralar.', inline: true },
-        { name: 'A!bilgi', value: 'Bot hakkında bilgi verir.', inline: true }
+        { name: 'A!bilgi', value: 'Bot hakkında bilgi verir.', inline: false }
       )
-      .setFooter('Daha fazla bilgi için bu komutları kullanabilirsiniz.');
-
     message.channel.send({ embeds: [helpEmbed] });
   }
 
@@ -181,69 +179,37 @@ client.on('messageCreate', async (message) => {
     const userWeeklyRank = Object.values(serverPoints[guildId]?.weekly || {}).filter(p => p > userWeeklyPoints).length + 1;
     const userAllTimeRank = Object.values(serverPoints[guildId]?.total || {}).filter(p => p > userAllTimePoints).length + 1;
 
-    const embed = new EmbedBuilder()
+    const pointsEmbed = new EmbedBuilder()
       .setColor(getRandomColor())
-      .setTitle('<a:kelebek:1271049122090192958> Partner Puanları')
-      .setDescription(
-        `ㅤㅤ ㅤ‿︵˓ ʚ🪷ɞ ˓ ︵ ͜
-        🪽︰<@${userId}> için puan durumu;
-
-        🕯️︰**Haftalık Puan:** ${userWeeklyPoints}
-        
-        ☁️︰**Haftalık Sıralama:** ${userWeeklyRank}
-        
-        🐚︰**Toplam Puan:** ${userAllTimePoints}
-        
-        🦢︰**Toplam Sıralama:** ${userAllTimeRank}   ㅤ   💌
-        ㅤㅤㅤㅤ  ㅤ 
-        ㅤㅤㅤ︶ ͡ ۫ ˓ ʚ🪷ɞ ˒ ۫ ͡ ︶`
+      .setTitle(`<@${userId}> için puan durumu`)
+      .addFields(
+        { name: 'Haftalık Puan', value: `${userWeeklyPoints}`, inline: true },
+        { name: 'Toplam Puan', value: `${userAllTimePoints}`, inline: true },
+        { name: 'Haftalık Sıralama', value: `${userWeeklyRank}`, inline: true },
+        { name: 'Toplam Sıralama', value: `${userAllTimeRank}`, inline: true },
       );
 
-    message.channel.send({ embeds: [embed] });
+    message.channel.send({ embeds: [pointsEmbed] });
   }
 
-  if (message.content.startsWith('A!partnerkanalayarla')) {
-    if (!message.member.permissions.has(PermissionsBitField.Flags.ManageGuild)) {
-      return message.reply('Bu komutu kullanmak için Sunucu Yönetme yetkisine sahip olmalısınız.');
-    }
+// A!topall komutunu işleme
+if (message.content === 'A!topall') {
+  const allPoints = {};
 
-    const args = message.content.split(' ');
-    const channelId = args[1]?.replace(/[<#>]/g, '');
-
-    if (!channelId) {
-      return message.reply('Lütfen geçerli bir kanal ID belirtin.');
-    }
-
-    serverChannels[message.guild.id] = channelId;
-    fs.writeFileSync('serverChannels.json', JSON.stringify(serverChannels, null, 2));
-    message.reply(`Partner kanalı başarıyla ayarlandı: <#${channelId}>`);
-  }
-
-  // A!top komutunu işleme
-  if (message.content === 'A!top') {
-    const guildId = message.guild.id;
-    const sortedWeeklyPoints = Object.entries(serverPoints[guildId]?.weekly || {}).sort(([, a], [, b]) => b - a);
-    paginate(sortedWeeklyPoints, message, 'Bu Sunucuda En Çok Partner Yapanlar <a:kelebek:1271049122090192958>', user => `<@${user[0]}> - ${user[1]} puan`);
-  }
-
-  // A!topall komutunu işleme
-  if (message.content === 'A!topall') {
-    const allPoints = {};
-
-    Object.entries(serverPoints).forEach(([guildId, points]) => {
-      Object.entries(points.total).forEach(([userId, userPoints]) => {
-        if (!allPoints[userId]) {
-          allPoints[userId] = 0;
-        }
-        allPoints[userId] += userPoints;
-      });
+  Object.entries(serverPoints).forEach(([guildId, points]) => {
+    Object.entries(points.total).forEach(([userId, userPoints]) => {
+      if (!allPoints[userId]) {
+        allPoints[userId] = 0;
+      }
+      allPoints[userId] += userPoints;
     });
+  });
 
-    const sortedAllTimePoints = Object.entries(allPoints).sort(([, a], [, b]) => b - a);
-    paginate(sortedAllTimePoints, message, 'Tüm Sunucularda En Çok Partner Yapanlar <a:kelebek:1271049122090192958>', user => `<@${user[0]}> - ${user[1]} puan`);
-  }
+  const sortedAllTimePoints = Object.entries(allPoints).sort(([, a], [, b]) => b - a);
+  await paginate(sortedAllTimePoints, message, 'Tüm Sunucularda En Çok Partner Yapanlar <a:kelebek:1271049122090192958>', user => `<@${user[0]}> - ${user[1]} puan`);
+}
 
-  // A!topserver komutunu işleme
+// A!topserver komutunu işleme
 if (message.content === 'A!topserver') {
   const sortedServerPoints = Object.entries(serverPoints)
     .map(([guildId, points]) => {
@@ -263,82 +229,54 @@ if (message.content === 'A!topserver') {
         : 'Henüz hiç partner yapılmadı.'
     );
 
-  // Butonlar oluşturma
-  const row = new MessageActionRow()
-    .addComponents(
-      new ButtonBuilder()
-        .setCustomId('refresh')
-        .setLabel('Yenile')
-        .setStyle('PRIMARY'),
-      new ButtonBuilder()
-        .setCustomId('details')
-        .setLabel('Detaylar')
-        .setStyle('SECONDARY')
-    );
-
-  const msg = await message.channel.send({ embeds: [embed], components: [row] });
-
-  // Buton etkileşimlerini işleme
-  const filter = i => {
-    i.deferUpdate();
-    return i.user.id === message.author.id; // Sadece mesajı atan kullanıcı
-  };
-
-  const collector = msg.createMessageComponentCollector({ filter, time: 60000 });
-
-  collector.on('collect', async (interaction) => {
-    if (interaction.customId === 'refresh') {
-      // Yenileme işlemleri
-      await interaction.editReply({ embeds: [embed], components: [row] });
-    } else if (interaction.customId === 'details') {
-      // Detay gösterimi
-      await interaction.followUp({ content: 'Detaylar burada gösterilecek!', ephemeral: true });
-    }
-  });
-
-  collector.on('end', () => {
-    // Butonları devre dışı bırakma
-    row.components.forEach(button => button.setDisabled(true));
-    msg.edit({ components: [row] });
-  });
+  message.channel.send({ embeds: [embed] });
 }
 
-// Sayfa başına gönderilen sonuçları işleyen fonksiyon
-function paginate(sortedPoints, message, title, formatUser) {
-  const pageSize = 10;
-  const totalPages = Math.ceil(sortedPoints.length / pageSize);
-  let currentPage = 0;
+  if (message.content.startsWith('A!top')) {
+    const sortedPoints = Object.entries(serverPoints[message.guild.id]?.total || {})
+      .sort(([, a], [, b]) => b - a)
+      .map(([userId, points]) => ({ userId, points }));
 
-  const sendPage = (page) => {
-    const start = page * pageSize;
-    const end = start + pageSize;
-    const embed = new EmbedBuilder()
-      .setColor(getRandomColor())
-      .setTitle(title)
-      .setDescription(sortedPoints.slice(start, end).map(formatUser).join('\n') || 'Hiçbir sonuç bulunamadı.');
+    const title = 'En Çok Partner Yapan Kullanıcılar';
+    await paginate(sortedPoints, message, title, user => `<@${user.userId}> - ${user.points} puan`);
+  }
 
-    message.channel.send({ embeds: [embed] });
-  };
-
-  const collector = message.channel.createMessageCollector({ time: 60000 });
-
-  collector.on('collect', (reaction) => {
-    if (reaction.content === '◀️' && currentPage > 0) {
-      currentPage--;
-      sendPage(currentPage);
-    } else if (reaction.content === '▶️' && currentPage < totalPages - 1) {
-      currentPage++;
-      sendPage(currentPage);
+  if (message.content.startsWith('A!topall')) {
+    const allUsersPoints = {};
+    for (const guildId in serverPoints) {
+      for (const userId in serverPoints[guildId].total) {
+        allUsersPoints[userId] = (allUsersPoints[userId] || 0) + serverPoints[guildId].total[userId];
+      }
     }
-  });
 
-  sendPage(currentPage);
-}
+    const sortedPoints = Object.entries(allUsersPoints)
+      .sort(([, a], [, b]) => b - a)
+      .map(([userId, points]) => ({ userId, points }));
 
-// Rastgele renk üretme fonksiyonu
+    const title = 'Tüm Sunucularda En Çok Partner Yapan Kullanıcılar';
+    await paginate(sortedPoints, message, title, user => `<@${user.userId}> - ${user.points} puan`);
+  }
+
+  if (message.content.startsWith('A!topserver')) {
+    const sortedServers = Object.entries(serverPoints)
+      .map(([guildId, points]) => ({
+        guildId,
+        totalPartners: Object.values(points.total).reduce((sum, p) => sum + p, 0)
+      }))
+      .sort((a, b) => b.totalPartners - a.totalPartners);
+
+    const title = 'En Çok Partner Yapan Sunucular';
+    await paginate(sortedServers, message, title, server => `<a:kelime:1271049122090192958> ${server.guildId} - ${server.totalPartners} partner`);
+  }
+});
+
+// Renk oluşturma fonksiyonu
 function getRandomColor() {
-  const color = `#${Math.floor(Math.random() * 16777215).toString(16)}`;
-  console.log(`Generated color: ${color}`); // Renk kodunu konsola yazdır
+  const letters = '0123456789ABCDEF';
+  let color = '#';
+  for (let i = 0; i < 6; i++) {
+    color += letters[Math.floor(Math.random() * 16)];
+  }
   return color;
 }
 
