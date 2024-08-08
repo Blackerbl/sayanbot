@@ -63,16 +63,18 @@ client.once('ready', () => {
 // Kullanıcıya dosyaları gönderen fonksiyon
 async function sendFilesToUser(userId, fileNames) {
   const user = await client.users.fetch(userId);
-  
-  // fileNames dizisinin geçerli olup olmadığını kontrol et
-  if (!Array.isArray(fileNames) || fileNames.length === 0) {
-    throw new Error('Dosya isimleri geçerli bir dizi olmalıdır.');
-  }
-
   const attachments = fileNames.map(fileName => ({
     attachment: `./${fileName}`,
     name: fileName
   }));
+
+  // Dosya isimleri geçerli bir dizi olmalı
+
+if (Array.isArray(attachments) && attachments.length > 0) {
+    await user.send({ files: attachments });
+} else {
+    throw new Error('Dosya isimleri geçerli bir dizi olmalıdır.');
+}
 
   // Dosyaların başarıyla gönderilip gönderilemeyeceğini kontrol et
   if (attachments.length > 0) {
@@ -93,10 +95,17 @@ app.listen(PORT, () => {
 });
 
 // A!yedekle komutunu işleme
-client.on('messageCreate', async message => {
-  if (message.content.startsWith('A!yedekle')) {
-    await sendFilesToUser(message.author.id);
-  }
+if (message.content.startsWith('A!yedekle')) {
+    const filesToSend = ['weeklyPoints.json', 'allTimePoints.json', 'serverChannels.json', 'serverPoints.json'];
+    await sendFilesToUser(message.author.id, filesToSend);
+}
+
+try {
+    const user = await client.users.fetch(userId);
+    // Dosya gönderme işlemleri
+} catch (error) {
+    console.error(`Hata: ${error.message}`);
+}
 
   const inviteLinkRegex = /discord(?:\.com|app\.com|\.gg)\/(?:invite\/)?[a-zA-Z0-9-]{2,32}/;
 
