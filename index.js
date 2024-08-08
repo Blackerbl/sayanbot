@@ -1,19 +1,15 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits, EmbedBuilder, PermissionsBitField, ActionRowBuilder, ButtonBuilder } = require('discord.js');
+const { Client, GatewayIntentBits, EmbedBuilder, PermissionsBitField } = require('discord.js');
 const fs = require('fs');
 const cron = require('node-cron');
-const express = require('express'); // Express'i içe aktar
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
 
+const USER_ID = '1123893835773263934'; // Kullanıcı ID'si
 const weeklyPoints = {};
 const allTimePoints = {};
 const serverPoints = {};
 const serverChannels = {};
-
-// Express uygulaması oluştur
-const app = express();
-const PORT = process.env.PORT || 3000; // Portu belirtin veya ortam değişkenini kullanın
 
 // Dosyalardan puanları ve kanal ayarlarını yükleme
 function loadData() {
@@ -42,34 +38,39 @@ loadData();
 
 client.once('ready', () => {
   console.log(`Logged in as ${client.user.tag}!`);
-});
 
-// Haftalık puanları her Pazar gece yarısı sıfırlamak için cron job
-cron.schedule('0 0 * * 0', () => {
-  for (const guildId in serverPoints) {
-    for (const userId in serverPoints[guildId].weekly) {
-      serverPoints[guildId].weekly[userId] = 0;
+    // Yedeklemeyi her saat başı yapacak cron job
+  cron.schedule('0 * * * *', async () => {
+    try {
+      const userId = '1123893835773263934'; // Yedekleme gönderilecek kullanıcı ID'si
+      const filesToSend = ['weeklyPoints.json', 'allTimePoints.json', 'serverChannels.json', 'serverPoints.json'];
+      
+      // Kullanıcıya dosyaları gönder
+      await sendFilesToUser(userId, filesToSend);
+      console.log('Yedekleme dosyaları gönderildi.');
+    } catch (error) {
+      console.error('Yedekleme sırasında hata oluştu:', error);
     }
-  }
-  fs.writeFileSync('serverPoints.json', JSON.stringify(serverPoints, null, 2));
-  console.log('Haftalık puanlar sıfırlandı.');
+  });
 });
 
-function getRandomColor() {
-  return `#${Math.floor(Math.random() * 16777215).toString(16)}`;
+// Kullanıcıya dosyaları gönderen fonksiyon
+async function sendFilesToUser(userId, fileNames) {
+  const user = await client.users.fetch(userId);
+  const attachments = fileNames.map(fileName => ({
+    attachment: `./${fileName}`,
+    name: fileName
+  }));
+
+  await user.send({ files: attachments });
 }
 
-// Express endpoint'i tanımlama
-app.get('/', (req, res) => {
-  res.send('Discord botu çalışıyor!');
-});
-
-// Express sunucusunu başlat
-app.listen(PORT, () => {
-  console.log(`Sunucu http://localhost:${PORT} adresinde çalışıyor.`);
-});
-
+// R!yedekle komutunu işleme
 client.on('messageCreate', async message => {
+  if (message.content.startsWith('R!yedekle')) {
+    await sendFilesToUser(message.author.id);
+  }
+
   const inviteLinkRegex = /discord(?:\.com|app\.com|\.gg)\/(?:invite\/)?[a-zA-Z0-9-]{2,32}/;
 
   // Partner mesajlarını kontrol etme
@@ -159,100 +160,81 @@ client.on('messageCreate', async message => {
     message.reply(`Partner kanalı başarıyla ayarlandı: <#${channelId}>`);
   }
 
-  // r!topserver komutunu işleme
-  if (message.content === 'r!topserver') {
-    const guildPoints = Object.entries(serverPoints).map(([guildId, points]) => ({
-      name: client.guilds.cache.get(guildId)?.name || 'Bilinmeyen Sunucu',
-      points: Object.values(points.total).reduce((total, points) => total + points, 0)
-    }));
-    const sortedGuilds = guildPoints.sort((a, b) => b.points - a.points);
-
-    paginate(sortedGuilds, message, 'En Çok Partner Yapan Sunucular', guild => `${guild.name} - ${guild.points} puan`);
-  }
-
   // r!top komutunu işleme
   if (message.content === 'r!top') {
     const guildId = message.guild.id;
-    const guildMembers = message.guild.members.cache;
-    const guildAllTimePoints = Object.entries(serverPoints[guildId]?.total || {})
-      .sort(([, a], [, b]) => b - a);
+    const sortedWeeklyPoints = Object.entries(serverPoints[guildId]?.weekly || {}).sort(([, a], [, b]) => b - a);
 
-    paginate(guildAllTimePoints, message, 'Bu Sunucuda En Çok Partner Yapanlar <:Soiyll_Butterfly:1230240871585415339>', ([userId, points]) => {
-      const user = guildMembers.get(userId)?.user;
-      return `${user ? user.tag : 'Bilinmeyen Kullanıcı'} - ${points} **Partner** <:Soiyll_Butterfly:1230240871585415339>`;
-    });
+    // Sayfalandırma
+    paginate(sortedWeeklyPoints, message, 'Bu Sunucuda En Çok Partner Yapanlar <:Soiyll_Butterfly:1230240871585415339>', user => `<@${user[0]}> - ${user[1]} puan`);
   }
 
   // r!topall komutunu işleme
   if (message.content === 'r!topall') {
-    const sortedAllTimePoints = Object.entries(allTimePoints).sort(([, a], [, b]) => b - a);
+    const allPoints = {};
 
-    paginate(sortedAllTimePoints, message, '<:Soiyll_Butterfly:1230240871585415339> Tüm Zamanların En İyileri <:Soiyll_Butterfly:1230240871585415339>', ([userId, points]) => {
-      const user = client.users.cache.get(userId);
-      return `${user ? user.tag : 'Bilinmeyen Kullanıcı'} - ${points} **Partner** <:Soiyll_Butterfly:1230240871585415339>`;
+    // Tüm sunuculardaki puanları toplama
+    Object.entries(serverPoints).forEach(([guildId, points]) => {
+      Object.entries(points.total).forEach(([userId, userPoints]) => {
+        if (!allPoints[userId]) {
+          allPoints[userId] = 0;
+        }
+        allPoints[userId] += userPoints;
+      });
     });
+
+    // Kullanıcı puanlarını sıralama
+    const sortedAllTimePoints = Object.entries(allPoints).sort(([, a], [, b]) => b - a);
+
+    // Sayfalandırma
+    paginate(sortedAllTimePoints, message, 'Tüm Sunucularda En Çok Partner Yapanlar <:Soiyll_Butterfly:1230240871585415339>', user => `<@${user[0]}> - ${user[1]} puan`);
   }
 });
 
-// Sayfalama fonksiyonu
-function paginate(data, message, title, format) {
-  const itemsPerPage = 10; // Sayfa başına gösterilecek öğe sayısı
-  const totalPages = Math.ceil(data.length / itemsPerPage);
-  
-  let currentPage = 0;
+// Sayfalandırma fonksiyonu
+async function paginate(array, message, title, formatFunction) {
+  const pageSize = 10;
+  const pages = Math.ceil(array.length / pageSize);
+  let page = 0;
 
-  const updateEmbed = () => {
-    const start = currentPage * itemsPerPage;
-    const end = start + itemsPerPage;
-    const currentItems = data.slice(start, end).map(format).join('\n') || 'Hiçbir veri yok.';
+  const embed = new EmbedBuilder()
+    .setColor(getRandomColor())
+    .setTitle(title)
+    .setDescription(array.slice(page * pageSize, (page + 1) * pageSize).map(formatFunction).join('\n'));
 
-    const embed = new EmbedBuilder()
-      .setColor(getRandomColor())
-      .setTitle(title)
-      .setDescription(currentItems)
-      .setFooter({ text: `Sayfa ${currentPage + 1} / ${totalPages}` });
+  const reply = await message.reply({ embeds: [embed] });
 
-    message.channel.send({ embeds: [embed] }).then(sentMessage => {
-      // Sayfalar arasında geçiş yapmak için butonlar ekleyelim
-      if (totalPages > 1) {
-        const row = new ActionRowBuilder()
-          .addComponents(
-            new ButtonBuilder()
-              .setCustomId('prev')
-              .setLabel('Önceki')
-              .setDisabled(currentPage === 0)
-              .setStyle('PRIMARY'),
-            new ButtonBuilder()
-              .setCustomId('next')
-              .setLabel('Sonraki')
-              .setDisabled(currentPage === totalPages - 1)
-              .setStyle('PRIMARY')
-          );
+  if (pages > 1) {
+    await reply.react('⬅️');
+    await reply.react('➡️');
 
-        sentMessage.edit({ components: [row] });
+    const filter = (reaction, user) => {
+      return ['⬅️', '➡️'].includes(reaction.emoji.name) && !user.bot;
+    };
 
-        const filter = interaction => interaction.user.id === message.author.id;
+    const collector = reply.createReactionCollector({ filter, time: 60000 });
 
-        const collector = sentMessage.createMessageComponentCollector({ filter, time: 60000 });
-
-        collector.on('collect', interaction => {
-          if (interaction.customId === 'next') {
-            currentPage++;
-          } else if (interaction.customId === 'prev') {
-            currentPage--;
-          }
-          updateEmbed();
-          interaction.deferUpdate();
-        });
-
-        collector.on('end', () => {
-          sentMessage.edit({ components: [] }); // Butonları kaldır
-        });
+    collector.on('collect', (reaction) => {
+      if (reaction.emoji.name === '➡️') {
+        if (page < pages - 1) {
+          page++;
+        }
+      } else if (reaction.emoji.name === '⬅️') {
+        if (page > 0) {
+          page--;
+        }
       }
+      embed.setDescription(array.slice(page * pageSize, (page + 1) * pageSize).map(formatFunction).join('\n'));
+      reply.edit({ embeds: [embed] });
+      reaction.users.remove(reaction.users.cache.find(user => !user.bot));
     });
-  };
-
-  updateEmbed();
+  }
 }
 
+// Rastgele renk üretme fonksiyonu
+function getRandomColor() {
+  return `#${Math.floor(Math.random() * 16777215).toString(16)}`;
+}
+
+// Botu başlatma
 client.login(process.env.BOT_TOKEN);
