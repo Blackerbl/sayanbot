@@ -2,6 +2,7 @@ require('dotenv').config();
 const { Client, GatewayIntentBits, EmbedBuilder, PermissionsBitField } = require('discord.js');
 const fs = require('fs');
 const cron = require('node-cron');
+const express = require('express'); // Express'i içe aktar
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
 
@@ -10,6 +11,11 @@ const weeklyPoints = {};
 const allTimePoints = {};
 const serverPoints = {};
 const serverChannels = {};
+
+// Express uygulaması oluştur
+const app = express();
+const PORT = process.env.PORT || 3000; // Portu belirtin veya ortam değişkenini kullanın
+
 
 // Dosyalardan puanları ve kanal ayarlarını yükleme
 function loadData() {
@@ -64,6 +70,16 @@ async function sendFilesToUser(userId, fileNames) {
 
   await user.send({ files: attachments });
 }
+
+// Express endpoint'i tanımlama
+app.get('/', (req, res) => {
+  res.send('Discord botu çalışıyor!');
+});
+
+// Express sunucusunu başlat
+app.listen(PORT, () => {
+  console.log(`Sunucu http://localhost:${PORT} adresinde çalışıyor.`);
+});
 
 // R!yedekle komutunu işleme
 client.on('messageCreate', async message => {
