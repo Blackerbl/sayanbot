@@ -199,31 +199,39 @@ const botInfoEmbed = new EmbedBuilder()
     }
 });
 
-
-//A!durum komudu
+  // A!durum komutunu işlemek için kontrol
   if (message.content.startsWith('A!durum')) {
-  const args = message.content.split(' ');
-  const userId = args[1] ? args[1].replace(/[<@!>]/g, '') : message.author.id;
-  const guildId = message.guild.id;
+    const args = message.content.split(' ');
+    const userId = args[1] ? args[1].replace(/[<@!>]/g, '') : message.author.id;
+    const guildId = message.guild.id;
 
-  const user = await message.guild.members.fetch(userId);
-  const userWeeklyPoints = serverPoints[guildId]?.weekly[userId] || 0;
-  const userAllTimePoints = serverPoints[guildId]?.total[userId] || 0;
-  const userWeeklyRank = Object.values(serverPoints[guildId]?.weekly || {}).filter(p => p > userWeeklyPoints).length + 1;
-  const userAllTimeRank = Object.values(serverPoints[guildId]?.total || {}).filter(p => p > userAllTimePoints).length + 1;
+    // Kullanıcıyı sunucudan al
+    const user = await message.guild.members.fetch(userId);
+    
+    // Kullanıcının puanlarını al
+    const userWeeklyPoints = serverPoints[guildId]?.weekly[userId] || 0;
+    const userAllTimePoints = serverPoints[guildId]?.total[userId] || 0;
 
-  const pointsEmbed = new EmbedBuilder()
-    .setColor(getRandomColor())
-    .setTitle(`${user.user.tag} için puan durumu`)  // Kullanıcının tag'ını göster
-    .addFields(
-      { name: 'Haftalık Puan', value: `${userWeeklyPoints}`, inline: true },
-      { name: 'Toplam Puan', value: `${userAllTimePoints}`, inline: true },
-      { name: 'Haftalık Sıralama', value: `${userWeeklyRank}`, inline: true },
-      { name: 'Toplam Sıralama', value: `${userAllTimeRank}`, inline: true },
-    );
+    // Sıralamayı hesapla
+    const userWeeklyRank = Object.values(serverPoints[guildId]?.weekly || {}).filter(p => p > userWeeklyPoints).length + 1;
+    const userAllTimeRank = Object.values(serverPoints[guildId]?.total || {}).filter(p => p > userAllTimePoints).length + 1;
 
-  message.channel.send({ embeds: [pointsEmbed] });
-}
+    // Embed mesajı oluştur ve gönder
+    const replyEmbed = new EmbedBuilder()
+      .setColor('#00FF00')
+      .setTitle(' <a:iyiyi:1273397453277626388> Kullanıcı Durumu <a:kelebek:1271049122090192958>')
+      .setDescription(`<a:byby:1273396971071209623> Kullanıcı durumu için bilgiler <@${userId}>!`)
+      .addFields(
+        { name: '<a:kelebek:1272421045000736882> Haftalık Puan', value: `${userWeeklyPoints} <:ohacus:1252301623192060025>` },
+        { name: '<a:kelebek:1272421045000736882> Toplam Puan', value: `${userAllTimePoints} <:ohacus:1252301623192060025>` },
+        { name: '<a:kelebek:1272421045000736882> Haftalık Sıralama', value: `${userWeeklyRank}<:ohacus:1252301623192060025>` },
+        { name: '<a:kelebek:1272421045000736882> Toplam Sıralama', value: `${userAllTimeRank}<:ohacus:1252301623192060025>` }
+      );
+
+    message.channel.send({ embeds: [replyEmbed] });
+  }
+});
+
 
 // Yedekleme fonksiyonunu tanımla
 async function sendBackup() {
