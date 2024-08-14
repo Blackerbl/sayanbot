@@ -113,15 +113,16 @@ client.on('messageCreate', async message => {
     const userAllTimeRank = Object.values(serverPoints[message.guild.id].total).filter(p => p > userAllTimePoints).length + 1;
 
     const replyEmbed = new EmbedBuilder()
-      .setColor('#00FF00')
-      .setTitle(' <a:iyiyi:1273397453277626388> Yeni Partner <a:kelebek:1271049122090192958>')
-      .setDescription(`<a:byby:1273396971071209623> ︰Yeni partner için teşekkürler <@${userId}>!')
-      .addFields
+    .setColor('#00FF00')
+    .setTitle(' <a:iyiyi:1273397453277626388> Yeni Partner <a:kelebek:1271049122090192958>')
+    .setDescription(`<a:byby:1273396971071209623> ︰Yeni partner için teşekkürler <@${userId}>!`)
+    .addFields(
         { name: '<a:kelebek:1272421045000736882> Haftalık Puan', value: `${userWeeklyPoints} <:ohacus:1252301623192060025>` },
         { name: '<a:kelebek:1272421045000736882> Toplam Puan', value: `${userAllTimePoints} <:ohacus:1252301623192060025>` },
-        { name: '<a:kelebek:1272421045000736882> Haftalık Sıralama', value: `${userWeeklyRank}<:ohacus:1252301623192060025>` },
-        { name: '<a:kelebek:1272421045000736882> Toplam Sıralama', value: `${userAllTimeRank}<:ohacus:1252301623192060025>` },
-      );
+        { name: '<a:kelebek:1272421045000736882> Haftalık Sıralama', value: `${userWeeklyRank} <:ohacus:1252301623192060025>` },
+        { name: '<a:kelebek:1272421045000736882> Toplam Sıralama', value: `${userAllTimeRank} <:ohacus:1252301623192060025>` }
+    );
+
 
     message.channel.send({ embeds: [replyEmbed] });
 
