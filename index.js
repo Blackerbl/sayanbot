@@ -114,13 +114,13 @@ client.on('messageCreate', async message => {
 
     const replyEmbed = new EmbedBuilder()
       .setColor('#00FF00')
-      .setTitle('<a:kelebek:1271049122090192958> Yeni Partner <a:kelebek:1271049122090192958>')
-      .setDescription(`<a:kelebek:1271049122090192958> ︰Yeni partner için teşekkürler <@${userId}>!`)
+      .setTitle(' <a:iyiyi:1273397453277626388> Yeni Partner <a:kelebek:1271049122090192958>')
+      .setDescription('<a:byby:1273396971071209623> ︰Yeni partner için teşekkürler <@${userId}>!`)
       .addFields(
-        { name: '<a:kelebek:1271049122090192958> Haftalık Puan', value: `${userWeeklyPoints} <:ohacus:1252301623192060025>` },
-        { name: '<a:kelebek:1271049122090192958> Toplam Puan', value: `${userAllTimePoints} <:ohacus:1252301623192060025>` },
-        { name: '<a:kelebek:1271049122090192958> Haftalık Sıralama', value: `${userWeeklyRank}<:ohacus:1252301623192060025>` },
-        { name: '<a:kelebek:1271049122090192958> Toplam Sıralama', value: `${userAllTimeRank}<:ohacus:1252301623192060025>` },
+        { name: '<a:kelebek:1272421045000736882> Haftalık Puan', value: `${userWeeklyPoints} <:ohacus:1252301623192060025>` },
+        { name: '<a:kelebek:1272421045000736882> Toplam Puan', value: `${userAllTimePoints} <:ohacus:1252301623192060025>` },
+        { name: '<a:kelebek:1272421045000736882> Haftalık Sıralama', value: `${userWeeklyRank}<:ohacus:1252301623192060025>` },
+        { name: '<a:kelebek:1272421045000736882> Toplam Sıralama', value: `${userAllTimeRank}<:ohacus:1252301623192060025>` },
       );
 
     message.channel.send({ embeds: [replyEmbed] });
@@ -140,16 +140,16 @@ const botInfoEmbed = new EmbedBuilder()
     .setTitle('Bot Bilgisi')
     .setDescription('Aşağıda bot hakkında bazı bilgiler bulunmaktadır:')
     .addFields(
-      { name: 'Bot Adı <:5209chibipaimonthink:1195643511433859072> ', value: `${client.user.username}`, inline: true },
-      { name: 'Bot ID <:5209chibipaimonthink:1195643511433859072> ', value: `${client.user.id}`, inline: true },
-      { name: 'Destek Sunucusu <:Cenzuoyeah:1207061939990175824> ', value: `[Buraya tıklayın](https://discord.gg/FUTaWCytme)`, inline: true },
-      { name: 'Toplam Sunucu Sayısı <:Cenzuoyeah:1207061939990175824> ', value: `${client.guilds.cache.size}`, inline: true },
-      { name: 'Toplam Kullanıcı Sayısı <:Cenzuoyeah:1207061939990175824> ', value: `${totalUsers}`, inline: true },
-      { name: 'Yapımcı <:silahlkedyremovebgpreview:1244232770939654184>', value: 'Keke_km', inline: true },
-      { name: 'Versiyon <:silahlkedyremovebgpreview:1244232770939654184> ', value: '0.0.0', inline: true },
+      { name: 'Bot Adı <:focacomfy:1272421146544963646> ', value: `${client.user.username}`, inline: true },
+      { name: 'Bot ID <:focacomfy:1272421146544963646> ', value: `${client.user.id}`, inline: true },
+      { name: 'Destek Sunucusu <:focacomfy:1272421146544963646> ', value: `[Buraya tıklayın](https://discord.gg/FUTaWCytme)`, inline: true },
+      { name: 'Toplam Sunucu Sayısı <:focacomfy:1272421146544963646> ', value: `${client.guilds.cache.size}`, inline: true },
+      { name: 'Toplam Kullanıcı Sayısı <:focacomfy:1272421146544963646> ', value: `${totalUsers}`, inline: true },
+      { name: 'Yapımcı <:focacomfy:1272421146544963646>', value: 'Keke_km', inline: true },
+      { name: 'Versiyon <:focacomfy:1272421146544963646> ', value: '0.0.0', inline: true },
       { name: 'Uptime <:9878jettsleepy:1207080216279781446>', value: `<t:${uptimeUnixTimestamp}:R>`, inline: true },
-      { name: 'Ping <:kedigojo:1253800303719878668> ', value: `${client.ws.ping}ms`, inline: true },
-      { name: 'Prefix <:kedigojo:1253800303719878668> ', value: `A!`, inline: true }
+      { name: 'Ping <:focacomfy:1272421146544963646> ', value: `${client.ws.ping}ms`, inline: true },
+      { name: 'Prefix <:focacomfy:1272421146544963646> ', value: `A!`, inline: true }
     ) // Noktalı virgül kaldırıldı
     .setFooter({ text: 'Bilgiler güncellenebilir.', iconURL: client.user.displayAvatarURL() })
     .setTimestamp();
@@ -158,31 +158,46 @@ const botInfoEmbed = new EmbedBuilder()
   message.channel.send({ embeds: [botInfoEmbed] });
 }
 
-if (message.content.startsWith('A!afk')) {
-    const reason = message.content.split(' ').slice(1).join(' ') || 'Sebep belirtilmedi.';
-    afkUsers.set(message.author.id, { reason, timestamp: Date.now() });
-    saveAfkUsers(); // Kullanıcıyı kaydet
-    message.reply(`AFK duruma alındınız. Sebep: ${reason}`);
-} else {
-    // AFK olan kullanıcıları etiketleyenler
-    const afkData = afkUsers.get(message.author.id);
-    if (afkData) {
-        // Kullanıcı AFK ise, durumu kaldır
-        afkUsers.delete(message.author.id);
-        saveAfkUsers(); // Güncellemeleri kaydet
-        message.reply(`AFK durumunuz kaldırıldı. Geçen süre: ${Math.floor((Date.now() - afkData.timestamp) / 1000)} saniye.`);
+    if (message.content.startsWith('A!afk')) {
+        const reason = message.content.split(' ').slice(1).join(' ') || 'Sebep belirtilmedi.';
+        afkUsers.set(message.author.id, { reason, timestamp: Date.now() });
+        saveAfkUsers(); // Kullanıcıyı kaydet
+        message.reply(`AFK duruma alındınız. Sebep: ${reason}`);
     } else {
-        // AFK olan kullanıcıyı kontrol et
-        const mentionedUser = message.mentions.users.first();
-        if (mentionedUser && afkUsers.has(mentionedUser.id)) {
-            const mentionedAfkData = afkUsers.get(mentionedUser.id);
-            const afkDuration = Math.floor((Date.now() - mentionedAfkData.timestamp) / 1000);
-            const afkUnixTimestamp = Math.floor(mentionedAfkData.timestamp / 1000); // AFK zaman damgası Unix olarak
+        // AFK olan kullanıcılar kontrol ediliyor
+        if (afkUsers.has(message.author.id)) {
+            const afkData = afkUsers.get(message.author.id);
+            
+            // AFK durumundan çıkışı bildir ve süreyi hesapla
+            const totalSeconds = Math.floor((Date.now() - afkData.timestamp) / 1000);
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
 
-            message.reply(`Üzgünüm, ${mentionedUser.username} AFK. Sebep: ${mentionedAfkData.reason}, AFK kalma süresi: <t:${afkUnixTimestamp}:R>`);
+            let timeString = '';
+            if (hours > 0) {
+                timeString += `${hours} saat, `;
+            }
+            timeString += `${minutes} dakika ve ${seconds} saniye`;
+
+            // AFK durumundan çıkış mesajı gönder
+            message.reply(`AFK diilsin la artık <a:iyiyi:1273397453277626388>. Geçen süre: ${timeString}.`);
+            
+            // Kullanıcıyı AFK listesinden çıkar
+            afkUsers.delete(message.author.id);
+        } else {
+            // Etiketlenen kullanıcı AFK ise
+            const mentionedUser = message.mentions.users.first();
+            if (mentionedUser && afkUsers.has(mentionedUser.id)) {
+                const mentionedAfkData = afkUsers.get(mentionedUser.id);
+                const afkUnixTimestamp = Math.floor(mentionedAfkData.timestamp / 1000); // AFK zaman damgası Unix olarak
+
+                message.reply(`Üzgünüm, ${mentionedUser.username} AFK. Sebep: ${mentionedAfkData.reason}, AFK kalma süresi: <t:${afkUnixTimestamp}:R>.`);
+            }
         }
     }
-}
+});
+
 
 //A!durum komudu
   if (message.content.startsWith('A!durum')) {
@@ -258,12 +273,12 @@ if (message.content === 'A!yardım') {
     .setTitle('Bot Komutları')
     .setDescription('Aşağıda botun tüm komutları listelenmiştir:')
     .addFields(
-      { name: ' <a:butterfly5:1230240683319623830>A!puan [@kullanıcı]', value: 'Kullanıcının puan durumunu gösterir.', inline: true },
-      { name: ' <a:butterfly5:1230240683319623830> A!top', value: 'Haftalık en çok puan toplayan kullanıcıları gösterir.', inline: true },
-      { name: ' <a:butterfly5:1230240683319623830>A!topserver', value: 'Sunucuda en çok puan toplayan kullanıcıyı gösterir.', inline: true },
-      { name: ' <a:butterfly5:1230240683319623830> A!alltop', value: 'Tüm sunuculardaki en çok puan toplayan kullanıcıları gösterir.', inline: true },
-      { name: ' <a:butterfly5:1230240683319623830> A!yedekle', value: 'Veri yedeği oluşturur.', inline: true },
-      { name: ' <a:butterfly5:1230240683319623830> A!bilgi', value: 'Bot hakkında bilgi verir.', inline: true },
+      { name: ' <a:emoji_12:1273396227278635058>A!durum [@kullanıcı]', value: 'Kullanıcının puan durumunu gösterir.', inline: true },
+      { name: ' <a:emoji_12:1273396227278635058> A!top', value: 'Haftalık en çok puan toplayan kullanıcıları gösterir.', inline: true },
+      { name: ' <a:emoji_12:1273396227278635058>A!topserver', value: 'Sunucuda en çok puan toplayan kullanıcıyı gösterir.', inline: true },
+      { name: ' <a:emoji_12:1273396227278635058> A!alltop', value: 'Tüm sunuculardaki en çok puan toplayan kullanıcıları gösterir.', inline: true },
+      { name: ' <a:emoji_12:1273396227278635058> A!afk', value: 'Afk durumuna geçersiniz!', inline: true },
+      { name: ' <a:emoji_12:1273396227278635058> A!bilgi', value: 'Bot hakkında bilgi verir.', inline: true },
       // Diğer komutlarınızı buraya ekleyebilirsiniz
     )
     .setFooter({ text: 'Daha fazla bilgi için komutları deneyebilirsiniz!' });
@@ -302,7 +317,7 @@ if (message.content === 'A!yardım') {
         .addFields(
           ...pageUsers.map((user, index) => ({
             name: `${i + index + 1}. ${user.username}`,
-            value: `Haftalık: ${user.weeklyPoints} <:ohacus:1252301623192060025>\nToplam: ${user.points} <:ohacus:1252301623192060025>`,
+            value: `Haftalık: ${user.weeklyPoints} <:AkenoHappy:1273395121236475994>\nToplam: ${user.points} <:ohacus:1252301623192060025>`,
             inline: true
           }))
         );
@@ -333,14 +348,14 @@ if (message.content === 'A!alltop') {
     const topEmbed = new EmbedBuilder()
       .setColor('#00FF00')
       .setTitle('Tüm Sunuculardaki En Çok Puanı Olan Kullanıcılar')
-      .setDescription('Aşağıda tüm sunuculardaki en yüksek puana sahip kullanıcılar listelenmiştir.');
+      .setDescription(<:AkenoHappy:1273395121236475994>');
 
     // Kullanıcıları ekle
     pageUsers.forEach((user, index) => {
       // Burada her bir alanın dolu olduğundan emin olun
       topEmbed.addFields({
         name: `${i + index + 1}. ${user.username}`,
-        value: `Haftalık: ${user.weeklyPoints} <:ohacus:1252301623192060025>\nToplam: ${user.points} <:ohacus:1252301623192060025>`,
+        value: `Haftalık: ${user.weeklyPoints} <:AkenoHappy:1273395121236475994>\nToplam: ${user.points} <:AkenoHappy:1273395121236475994>`,
         inline: true
       });
     });
@@ -363,7 +378,7 @@ client.on('presenceUpdate', (oldPresence, newPresence) => {
     if (oldPresence && afkUsers.has(oldPresence.userId)) {
         afkUsers.delete(oldPresence.userId);
         saveAfkUsers(); // Kullanıcıyı dosyadan kaldır
-        oldPresence.member.send('AFK durumundan döndünüz.');
+        oldPresence.member.send('Artık Afk Diilsin');
     }
 });
 
