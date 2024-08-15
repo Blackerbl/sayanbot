@@ -114,13 +114,13 @@ client.on('messageCreate', async message => {
 
     const replyEmbed = new EmbedBuilder()
       .setColor('#00FF00')
-      .setTitle('<a:kelebek:1271049122090192958> Yeni Partner <a:kelebek:1271049122090192958>')
-      .setDescription(`<a:kelebek:1271049122090192958> ︰Yeni partner için teşekkürler <@${userId}>!`)
+      .setTitle('<a:kelebek:1272421045000736882> Yeni Partner <a:kelebek:1272421045000736882>')
+      .setDescription(`<a:kelebek:1272421045000736882> ︰Yeni partner için teşekkürler <@${userId}>!`)
       .addFields(
-        { name: '<a:kelebek:1271049122090192958> Haftalık Puan', value: `${userWeeklyPoints} <:yes:1272441451543789641>` },
-        { name: '<a:kelebek:1271049122090192958> Toplam Puan', value: `${userAllTimePoints} <:yes:1272441451543789641>` },
-        { name: '<a:kelebek:1271049122090192958> Haftalık Sıralama', value: `${userWeeklyRank}<:yes:1272441451543789641>` },
-        { name: '<a:kelebek:1271049122090192958> Toplam Sıralama', value: `${userAllTimeRank}<:yes:1272441451543789641>` },
+        { name: '<a:kelebek:1272421045000736882> Haftalık Puan', value: `${userWeeklyPoints} <:yes:1272441451543789641>` },
+        { name: '<a:kelebek:1272421045000736882> Toplam Puan', value: `${userAllTimePoints} <:yes:1272441451543789641>` },
+        { name: '<a:kelebek:1272421045000736882> Haftalık Sıralama', value: `${userWeeklyRank}<:yes:1272441451543789641>` },
+        { name: '<a:kelebek:1272421045000736882> Toplam Sıralama', value: `${userAllTimeRank}<:yes:1272441451543789641>` },
       );
 
     message.channel.send({ embeds: [replyEmbed] });
