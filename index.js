@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
+const { Client, GatewayIntentBits, EmbedBuilder, AttachmentBuilder } = require('discord.js');
 const fs = require('fs');
 const cron = require('node-cron');
 const express = require('express');
@@ -23,6 +23,7 @@ const files = [
 ];
 
 
+let isBackupInProgress = false;
 
 // AFK kullanıcılarını dosyadan yükle
 let afkUsers = new Map();
@@ -223,42 +224,81 @@ if (message.content.startsWith('A!afk')) {
   const userWeeklyRank = Object.values(serverPoints[guildId]?.weekly || {}).filter(p => p > userWeeklyPoints).length + 1;
   const userAllTimeRank = Object.values(serverPoints[guildId]?.total || {}).filter(p => p > userAllTimePoints).length + 1;
 
-  const pointsEmbed = new EmbedBuilder()
+   const pointsEmbed = new EmbedBuilder()
     .setColor(getRandomColor())
-    .setTitle(`${user.user.tag} için puan durumu`)  // Kullanıcının tag'ını göster
+    .setTitle(`<a:kelebek:1272421045000736882> ${user.user.tag} için puan durumu`)  // Kullanıcının tag'ını göster
     .addFields(
-      { name: 'Haftalık Puan', value: `${userWeeklyPoints}`, inline: true },
-      { name: 'Toplam Puan', value: `${userAllTimePoints}`, inline: true },
-      { name: 'Haftalık Sıralama', value: `${userWeeklyRank}`, inline: true },
-      { name: 'Toplam Sıralama', value: `${userAllTimeRank}`, inline: true },
-    );
+      { name: '<a:kelebek:1272421045000736882> Haftalık Puan', value: `${userWeeklyPoints} <:yes:1272441451543789641>`, inline: true },
+      { name: '<a:kelebek:1272421045000736882> Toplam Puan', value: `${userAllTimePoints} <:yes:1272441451543789641>`, inline: true },
+      { name: '<a:kelebek:1272421045000736882> Haftalık Sıralama', value: `${userWeeklyRank} <:yes:1272441451543789641>`, inline: true },
+      { name: '<a:kelebek:1272421045000736882> Toplam Sıralama', value: `${userAllTimeRank} <:yes:1272441451543789641>`, inline: true }
+    )
+    .setFooter({ text: 'Puanlar haftalık olarak sıfırlanır.', iconURL: client.user.displayAvatarURL() })
+    .setTimestamp();
 
   message.channel.send({ embeds: [pointsEmbed] });
 }
 
-// Yedekleme fonksiyonunu tanımla
-async function sendBackup() {
-    try {
-        const user = await client.users.fetch(userId);
-        await user.send({
-            content: "İşte yedek dosyalarınız:",
-            files: files.map(file => ({ attachment: file }))
-        });
-        console.log('Yedek dosyaları başarıyla gönderildi.');
-    } catch (error) {
-        console.error('Dosyalar gönderilirken bir hata oluştu:', error);
-    }
+// Yedekleme fonksiyonu
+function backupFiles() {
+  if (isBackupInProgress) {
+    console.log('Yedekleme zaten devam ediyor. Yeni yedekleme başlatılmadı.');
+    return [];
+  }
+
+  isBackupInProgress = true;
+
+  try {
+    const files = ['allTimePoints.json', 'weeklyPoints.json', 'serverChannels.json', 'serverPoints.json'];
+    const attachments = [];
+
+    files.forEach(file => {
+      const filePath = `./${file}`;
+      if (fs.existsSync(filePath)) {
+        const attachment = new AttachmentBuilder(filePath);
+        attachments.push(attachment);
+        console.log(`Dosya yedeklendi: ${filePath}`);
+      } else {
+        console.log(`Dosya bulunamadı: ${filePath}`);
+      }
+    });
+
+    console.log('Yedekleme işlemi tamamlandı.');
+    return attachments;
+
+  } catch (error) {
+    console.error('Yedekleme sırasında bir hata oluştu:', error);
+    return [];
+  } finally {
+    isBackupInProgress = false;
+  }
 }
 
-// A!yedekle komutu kullanıldığında yedekleme fonksiyonunu çağır
-client.on('messageCreate', async (message) => {
-    if (message.content === 'A!yedekle') {
-        await sendBackup();
-        message.channel.send('Yedek dosyaları başarıyla gönderildi.');
+client.on('messageCreate', async message => {
+  if (message.content === 'A!yedekle') {
+    if (isBackupInProgress) {
+      return message.reply('Yedekleme işlemi zaten devam ediyor. Lütfen bekleyin.');
     }
+    
+    const attachments = backupFiles();
+    if (attachments.length > 0) {
+      try {
+        await message.author.send({
+          content: 'Yedekleme tamamlandı. İşte dosyalar:',
+          files: attachments
+        });
+        message.reply('Yedekleme başarıyla tamamlandı ve dosyalar gönderildi.');
+      } catch (err) {
+        console.error('Dosyalar gönderilirken bir hata oluştu:', err);
+        message.reply('Dosyaları gönderirken bir hata oluştu.');
+      }
+    } else {
+      message.reply('Yedekleme sırasında bir hata oluştu veya yedeklenecek dosya bulunamadı.');
+    }
+  }
 });
 
-// Her 30 dakikada bir yedek dosyalarını gönder
+// Her 15 dakikada bir yedek dosyalarını gönder
 setInterval(() => {
     sendBackup();
 }, 900000); // 15 dakika = 900000 milisaniye
