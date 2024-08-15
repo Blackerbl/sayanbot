@@ -140,16 +140,16 @@ const botInfoEmbed = new EmbedBuilder()
     .setTitle('Bot Bilgisi')
     .setDescription('Aşağıda bot hakkında bazı bilgiler bulunmaktadır:')
     .addFields(
-      { name: 'Bot Adı <:5209chibipaimonthink:1195643511433859072> ', value: `${client.user.username}`, inline: true },
-      { name: 'Bot ID <:5209chibipaimonthink:1195643511433859072> ', value: `${client.user.id}`, inline: true },
-      { name: 'Destek Sunucusu <:Cenzuoyeah:1207061939990175824> ', value: `[Buraya tıklayın](https://discord.gg/FUTaWCytme)`, inline: true },
-      { name: 'Toplam Sunucu Sayısı <:Cenzuoyeah:1207061939990175824> ', value: `${client.guilds.cache.size}`, inline: true },
-      { name: 'Toplam Kullanıcı Sayısı <:Cenzuoyeah:1207061939990175824> ', value: `${totalUsers}`, inline: true },
-      { name: 'Yapımcı <:silahlkedyremovebgpreview:1244232770939654184>', value: 'Keke_km', inline: true },
-      { name: 'Versiyon <:silahlkedyremovebgpreview:1244232770939654184> ', value: '0.0.0', inline: true },
-      { name: 'Uptime <:9878jettsleepy:1207080216279781446>', value: `<t:${uptimeUnixTimestamp}:R>`, inline: true },
-      { name: 'Ping <:kedigojo:1253800303719878668> ', value: `${client.ws.ping}ms`, inline: true },
-      { name: 'Prefix <:kedigojo:1253800303719878668> ', value: `A!`, inline: true }
+      { name: 'Bot Adı <a:byby:1273396971071209623> ', value: `${client.user.username}`, inline: true },
+      { name: 'Bot ID <a:byby:1273396971071209623> ', value: `${client.user.id}`, inline: true },
+      { name: 'Destek Sunucusu <a:byby:1273396971071209623>', value: `[Buraya tıklayın](https://discord.gg/FUTaWCytme)`, inline: true },
+      { name: 'Toplam Sunucu Sayısı <a:byby:1273396971071209623> ', value: `${client.guilds.cache.size}`, inline: true },
+      { name: 'Toplam Kullanıcı Sayısı <a:byby:1273396971071209623> ', value: `${totalUsers}`, inline: true },
+      { name: 'Yapımcı <a:byby:1273396971071209623>', value: 'Keke_km', inline: true },
+      { name: 'Versiyon <a:byby:1273396971071209623> ', value: '0.0.0', inline: true },
+      { name: 'Uptime <a:byby:1273396971071209623>', value: `<t:${uptimeUnixTimestamp}:R>`, inline: true },
+      { name: 'Ping <a:byby:1273396971071209623> ', value: `${client.ws.ping}ms`, inline: true },
+      { name: 'Prefix <a:byby:1273396971071209623> ', value: `A!`, inline: true }
     ) // Noktalı virgül kaldırıldı
     .setFooter({ text: 'Bilgiler güncellenebilir.', iconURL: client.user.displayAvatarURL() })
     .setTimestamp();
