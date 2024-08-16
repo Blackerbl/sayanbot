@@ -327,6 +327,7 @@ if (message.content === 'A!yardım') {
       { name: ' <a:kelebek:1272421045000736882> A!topserver', value: 'Sunucuda en çok puan toplayan kullanıcıyı gösterir.', inline: true },
       { name: ' <a:kelebek:1272421045000736882>  A!alltop', value: 'Tüm sunuculardaki en çok puan toplayan kullanıcıları gösterir.', inline: true },
       { name: ' <a:kelebek:1272421045000736882>  A!bilgi', value: 'Bot hakkında bilgi verir.', inline: true },
+      { name: ' <a:kelebek:1272421045000736882>  A!partnerkanalayarla', value: 'Partner Kanalını etiketlendiği er olarak ayarlar!.', inline: true },
       // Diğer komutlarınızı buraya ekleyebilirsiniz
     )
     .setFooter({ text: 'Yakında başka komutlar eklenebilir' });
